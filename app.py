@@ -124,7 +124,7 @@ st.markdown("""
 def load_data():
     from datetime import datetime, timedelta
     
-    # Google Sheets CSV export URL
+    # Google Sheets CSV export URL (converted from pubhtml to CSV format)
     google_sheets_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSbD6wUrZEt9kuSQpUT2pw0FMOb7h1y8xeX-hDTeiiZUPjtV0ohK_WcFtCSt_4nuxdtn9zqFS8z8aGw/export?format=csv&gid=0"
     
     data_source = None
