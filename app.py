@@ -130,8 +130,8 @@ def load_data():
     data_source = None
     try:
         st.markdown('<div class="status-box">🔄 Loading main data from Google Sheets...</div>', unsafe_allow_html=True)
-        # Try Google Sheets first
-        df = pd.read_csv(main_data_url)
+        # Try Google Sheets first - skip first few rows to find headers
+        df = pd.read_csv(main_data_url, skiprows=4)
         data_source = "Google Sheets"
         st.markdown('<div class="status-box">✅ Successfully loaded from Google Sheets!</div>', unsafe_allow_html=True)
         
@@ -147,6 +147,8 @@ def load_data():
     if 'MIT Name' not in df.columns:
         st.error("❌ Column 'MIT Name' not found in data. Please check the Google Sheet structure.")
         st.write("Available columns:", df.columns.tolist())
+        st.write("First few rows of data:")
+        st.dataframe(df.head())
         return pd.DataFrame(), "Error"
     
     df = df[df['MIT Name'].notna()]
@@ -263,7 +265,7 @@ def load_jobs_data():
     
     try:
         st.markdown('<div class="status-box">🔄 Loading jobs data from Google Sheets...</div>', unsafe_allow_html=True)
-        jobs_df = pd.read_csv(jobs_url)
+        jobs_df = pd.read_csv(jobs_url, skiprows=4)
         st.markdown('<div class="status-box">✅ Successfully loaded jobs from Google Sheets!</div>', unsafe_allow_html=True)
         
         # Clean up the data
