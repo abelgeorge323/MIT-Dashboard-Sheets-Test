@@ -124,14 +124,14 @@ st.markdown("""
 def load_data():
     from datetime import datetime, timedelta
     
-    # Google Sheets CSV export URL (converted from pubhtml to CSV format)
-    google_sheets_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSbD6wUrZEt9kuSQpUT2pw0FMOb7h1y8xeX-hDTeiiZUPjtV0ohK_WcFtCSt_4nuxdtn9zqFS8z8aGw/export?format=csv&gid=0"
+    # Google Sheets CSV export URLs for both tabs
+    main_data_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSbD6wUrZEt9kuSQpUT2pw0FMOb7h1y8xeX-hDTeiiZUPjtV0ohK_WcFtCSt_4nuxdtn9zqFS8z8aGw/pub?gid=1155015355&single=true&output=csv"
     
     data_source = None
     try:
-        st.markdown('<div class="status-box">🔄 Loading data from Google Sheets...</div>', unsafe_allow_html=True)
+        st.markdown('<div class="status-box">🔄 Loading main data from Google Sheets...</div>', unsafe_allow_html=True)
         # Try Google Sheets first
-        df = pd.read_csv(google_sheets_url)
+        df = pd.read_csv(main_data_url)
         data_source = "Google Sheets"
         st.markdown('<div class="status-box">✅ Successfully loaded from Google Sheets!</div>', unsafe_allow_html=True)
         
@@ -256,8 +256,58 @@ def load_data():
     
     return df, data_source
 
+@st.cache_data(ttl=300)
+def load_jobs_data():
+    """Load open job positions from Placement Options sheet"""
+    jobs_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSbD6wUrZEt9kuSQpUT2pw0FMOb7h1y8xeX-hDTeiiZUPjtV0ohK_WcFtCSt_4nuxdtn9zqFS8z8aGw/pub?gid=116813539&single=true&output=csv"
+    
+    try:
+        st.markdown('<div class="status-box">🔄 Loading jobs data from Google Sheets...</div>', unsafe_allow_html=True)
+        jobs_df = pd.read_csv(jobs_url)
+        st.markdown('<div class="status-box">✅ Successfully loaded jobs from Google Sheets!</div>', unsafe_allow_html=True)
+        
+        # Clean up the data
+        if len(jobs_df) > 0:
+            # Remove any completely empty rows
+            jobs_df = jobs_df.dropna(how='all')
+            
+            # Remove rows where Job Title is empty or NaN
+            if 'Job Title' in jobs_df.columns:
+                jobs_df = jobs_df.dropna(subset=['Job Title'])
+                jobs_df = jobs_df[jobs_df['Job Title'].str.strip() != '']
+            
+            # Only keep rows that have valid JV ID
+            if 'JV ID' in jobs_df.columns:
+                jobs_df = jobs_df.dropna(subset=['JV ID'])
+                jobs_df['JV ID'] = pd.to_numeric(jobs_df['JV ID'], errors='coerce')
+                jobs_df = jobs_df.dropna(subset=['JV ID'])
+            
+            # Map VERT codes to full names for jobs
+            vertical_map = {
+                'MANU': 'Manufacturing',
+                'AUTO': 'Automotive',
+                'FIN': 'Finance',
+                'TECH': 'Technology',
+                'AVI': 'Aviation',
+                'DIST': 'Distribution',
+                'RD': 'R&D',
+                'LIFSC': 'Life Science',
+                'Reg & Div': 'Regulatory & Division'
+            }
+            if 'VERT' in jobs_df.columns:
+                jobs_df['Vertical'] = jobs_df['VERT'].map(vertical_map).fillna(jobs_df['VERT'])
+            
+            # Fill NaN values with empty strings for display
+            jobs_df = jobs_df.fillna('')
+            
+        return jobs_df
+    except Exception as e:
+        st.error(f"Error loading jobs data: {e}")
+        return pd.DataFrame()
+
 # Load data
 df, data_source = load_data()
+jobs_df = load_jobs_data()
 
 if df.empty:
     st.error("❌ Unable to load data. Please check the Google Sheet configuration.")
@@ -285,33 +335,35 @@ starting_training = (df["Readiness"] == "Starting MIT Training").sum()
 offer_pending = (df["Readiness"] == "Offer Pending").sum()
 started_mit_training = int(started_training + starting_training)  # grouped bucket
 
+open_jobs = len(jobs_df) if not jobs_df.empty else 0
+
 col1, col2, col3, col4, col5 = st.columns(5)
 
-# Executive-facing order: Total → Ready → In Training → Started
+# Executive-facing order: Total → Open Positions → Ready → In Training → Started
 col1.metric(
     "Total Candidates",
     total,
     help="All candidates currently in the MIT program dataset"
 )
 col2.metric(
+    "Open Positions",
+    open_jobs,
+    help="Number of active openings available to place candidates"
+)
+col3.metric(
     "Ready for Placement",
     ready,
     help="Candidates at Week ≥ 6 who are not already placed"
 )
-col3.metric(
+col4.metric(
     "In Training (Weeks 1–5)",
     in_training,
     help="Candidates actively progressing through Weeks 1–5 of training"
 )
-col4.metric(
+col5.metric(
     "Started MIT Training",
     started_mit_training,
     help="New Program Starts (Week 0) plus those placed at training sites"
-)
-col5.metric(
-    "Offer Pending",
-    offer_pending,
-    help="Candidates with pending offers awaiting approval"
 )
 
 # ---- VISUAL SECTION ----
@@ -358,23 +410,43 @@ with right_col:
     )
     st.plotly_chart(fig_pie, use_container_width=True)
 
-# Left side: data info
+# Left side: open job positions
 with left_col:
-    st.subheader("📋 Data Information")
-    st.write(f"**Total Records:** {len(df)}")
-    st.write(f"**Columns:** {len(df.columns)}")
-    st.write("**Available Columns:**")
-    for col in df.columns:
-        st.write(f"- {col}")
-    
-    # Show sample data
-    st.subheader("🔍 Sample Data")
-    if 'MIT Name' in df.columns and 'Salary' in df.columns:
-        sample_df = df[['MIT Name', 'Salary', 'Week', 'Readiness']].head()
-        st.dataframe(sample_df, use_container_width=True)
+    st.subheader("📍 Open Job Positions")
+    if not jobs_df.empty:
+        # Create a cleaner display of job positions
+        display_jobs = jobs_df.copy()
+        
+        # Create a more concise summary column
+        if 'Job Title' in display_jobs.columns and 'Account' in display_jobs.columns and 'City' in display_jobs.columns and 'State' in display_jobs.columns:
+            display_jobs['Position'] = display_jobs.apply(
+                lambda row: f"{row.get('Job Title', 'N/A')} - {row.get('Account', 'N/A')}", 
+                axis=1
+            )
+            display_jobs['Location'] = display_jobs.apply(
+                lambda row: f"{row.get('City', 'N/A')}, {row.get('State', 'N/A')}", 
+                axis=1
+            )
+            
+            # Show clean columns including salary
+            clean_columns = ['Position', 'Location', 'Vertical', 'Salary']
+            available_columns = [col for col in clean_columns if col in display_jobs.columns]
+            
+            if available_columns:
+                # Style the dataframe for better readability
+                styled_df = display_jobs[available_columns].copy()
+                st.dataframe(
+                    styled_df, 
+                    use_container_width=True,
+                    height=450,
+                    hide_index=True
+                )
+            else:
+                st.dataframe(display_jobs, use_container_width=True, height=450)
+        else:
+            st.dataframe(display_jobs, use_container_width=True, height=450)
     else:
-        st.write("First 5 rows:")
-        st.dataframe(df.head(), use_container_width=True)
+        st.markdown('<div class="placeholder-box">No job positions data available</div>', unsafe_allow_html=True)
 
 # ---- QUICK INSIGHTS ----
 st.markdown("<h3>🧠 Quick Insights</h3>", unsafe_allow_html=True)
