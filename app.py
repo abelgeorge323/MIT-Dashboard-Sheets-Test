@@ -135,6 +135,12 @@ def load_data():
         data_source = "Google Sheets"
         st.markdown('<div class="status-box">✅ Successfully loaded from Google Sheets!</div>', unsafe_allow_html=True)
         
+        # Debug: Show raw data structure
+        st.write("🔍 Debug: Raw data shape:", df.shape)
+        st.write("🔍 Debug: Raw columns:", df.columns.tolist())
+        st.write("🔍 Debug: First 3 rows:")
+        st.dataframe(df.head(3))
+        
     except Exception as e:
         st.markdown(f'<div class="status-box">⚠️ Google Sheets error: {e}</div>', unsafe_allow_html=True)
         st.markdown('<div class="status-box">📁 No fallback available - this is a Google Sheets only version</div>', unsafe_allow_html=True)
@@ -154,8 +160,17 @@ def load_data():
     # Debug: Show salary column info
     if 'Salary' in df.columns:
         st.info(f"✅ Salary column found with {df['Salary'].notna().sum()} non-null values")
+        # Show some sample salary values for debugging
+        salary_samples = df['Salary'].dropna().head(5)
+        if not salary_samples.empty:
+            st.write("Sample salary values:", salary_samples.tolist())
+        else:
+            st.write("No non-null salary values found")
+            # Show what's actually in the salary column
+            st.write("All salary values:", df['Salary'].unique()[:10])
     else:
         st.warning("⚠️ Salary column not found in data")
+        st.write("Available columns:", df.columns.tolist())
     
     df = df[df['MIT Name'].notna()]
     df = df[df['MIT Name'] != 'MIT Name']  # Remove duplicate headers
