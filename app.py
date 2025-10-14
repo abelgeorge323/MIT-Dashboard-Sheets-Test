@@ -120,7 +120,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ---- LOAD DATA ----
-@st.cache_data(ttl=300, fallback={"error": "Data temporarily unavailable"})
+@st.cache_data(ttl=300)
 def load_data():
     from datetime import datetime, timedelta
     
