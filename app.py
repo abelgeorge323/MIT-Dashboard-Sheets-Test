@@ -151,6 +151,12 @@ def load_data():
         st.dataframe(df.head())
         return pd.DataFrame(), "Error"
     
+    # Debug: Show salary column info
+    if 'Salary' in df.columns:
+        st.info(f"✅ Salary column found with {df['Salary'].notna().sum()} non-null values")
+    else:
+        st.warning("⚠️ Salary column not found in data")
+    
     df = df[df['MIT Name'].notna()]
     df = df[df['MIT Name'] != 'MIT Name']  # Remove duplicate headers
     df = df[df['MIT Name'] != 'New Candidate Name']  # Remove template rows
@@ -265,11 +271,17 @@ def load_jobs_data():
     
     try:
         st.markdown('<div class="status-box">🔄 Loading jobs data from Google Sheets...</div>', unsafe_allow_html=True)
-        jobs_df = pd.read_csv(jobs_url, skiprows=4)
+        jobs_df = pd.read_csv(jobs_url, skiprows=5, header=0)
         st.markdown('<div class="status-box">✅ Successfully loaded jobs from Google Sheets!</div>', unsafe_allow_html=True)
         
         # Clean up the data
         if len(jobs_df) > 0:
+            # Drop JV Link and JV ID columns as requested
+            if 'JV Link' in jobs_df.columns:
+                jobs_df = jobs_df.drop('JV Link', axis=1)
+            if 'JV ID' in jobs_df.columns:
+                jobs_df = jobs_df.drop('JV ID', axis=1)
+            
             # Remove any completely empty rows
             jobs_df = jobs_df.dropna(how='all')
             
@@ -277,12 +289,6 @@ def load_jobs_data():
             if 'Job Title' in jobs_df.columns:
                 jobs_df = jobs_df.dropna(subset=['Job Title'])
                 jobs_df = jobs_df[jobs_df['Job Title'].str.strip() != '']
-            
-            # Only keep rows that have valid JV ID
-            if 'JV ID' in jobs_df.columns:
-                jobs_df = jobs_df.dropna(subset=['JV ID'])
-                jobs_df['JV ID'] = pd.to_numeric(jobs_df['JV ID'], errors='coerce')
-                jobs_df = jobs_df.dropna(subset=['JV ID'])
             
             # Map VERT codes to full names for jobs
             vertical_map = {
@@ -341,7 +347,7 @@ open_jobs = len(jobs_df) if not jobs_df.empty else 0
 
 col1, col2, col3, col4, col5 = st.columns(5)
 
-# Executive-facing order: Total → Open Positions → Ready → In Training → Started
+# Executive-facing order: Total → Open Positions → Ready → In Training → Offer Pending
 col1.metric(
     "Total Candidates",
     total,
@@ -363,9 +369,9 @@ col4.metric(
     help="Candidates actively progressing through Weeks 1–5 of training"
 )
 col5.metric(
-    "Started MIT Training",
-    started_mit_training,
-    help="New Program Starts (Week 0) plus those placed at training sites"
+    "Offer Pending",
+    offer_pending,
+    help="Candidates with pending offers awaiting approval"
 )
 
 # ---- VISUAL SECTION ----
@@ -411,6 +417,28 @@ with right_col:
         marker=dict(line=dict(color="#0B0F14", width=2))
     )
     st.plotly_chart(fig_pie, use_container_width=True)
+
+# ---- OFFER PENDING SECTION ----
+if offer_pending > 0:
+    st.markdown("---")
+    st.markdown("### 🤝 Offer Pending Candidates")
+    
+    offer_pending_df = df[df["Readiness"] == "Offer Pending"]
+    if 'Training Site' in offer_pending_df.columns and 'Location' in offer_pending_df.columns and 'Salary' in offer_pending_df.columns and 'Level' in offer_pending_df.columns and 'Notes' in offer_pending_df.columns:
+        offer_pending_display = offer_pending_df[['MIT Name', 'Training Site', 'Location', 'Salary', 'Level', 'Notes']].copy()
+        
+        # Format salary
+        offer_pending_display['Salary'] = offer_pending_display['Salary'].apply(
+            lambda x: f"${x:,.0f}" if pd.notna(x) else "TBD"
+        )
+        
+        st.dataframe(offer_pending_display, use_container_width=True, hide_index=True)
+    else:
+        # Fallback if columns don't exist
+        offer_pending_display = offer_pending_df[['MIT Name', 'Status', 'Readiness']].copy()
+        st.dataframe(offer_pending_display, use_container_width=True, hide_index=True)
+    
+    st.caption(f"{offer_pending} candidates with pending offers - awaiting final approval/acceptance")
 
 # Left side: open job positions
 with left_col:
