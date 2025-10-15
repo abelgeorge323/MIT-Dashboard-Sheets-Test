@@ -224,6 +224,72 @@ with left_col:
     else:
         st.markdown('<div class="placeholder-box">No job positions data available</div>', unsafe_allow_html=True)
 
+# ==========================================================
+# READY FOR PLACEMENT SECTION
+# ==========================================================
+ready_df = df[
+    df["Week"].apply(lambda x: isinstance(x, (int, float)) and x > 6)
+    & (~df["Status"].isin(["position identified", "offer pending", "offer accepted"]))
+    & (df["Status"].notna())
+]
+
+if not ready_df.empty:
+    st.markdown("---")
+    st.markdown("### 🧩 Ready for Placement Candidates")
+
+    # Select relevant columns dynamically
+    ready_cols = [col for col in ["MIT Name", "Training Site", "Location", "Week", "Salary", "Level"] if col in ready_df.columns]
+    ready_display = ready_df[ready_cols].copy().fillna("—")
+
+    # Clean salary formatting
+    if "Salary" in ready_display.columns:
+        ready_display["Salary"] = (
+            ready_display["Salary"].astype(str).str.replace("$", "").str.replace(",", "").replace("nan", "TBD")
+        )
+
+    # Show table
+    st.dataframe(
+        ready_display,
+        use_container_width=True,
+        hide_index=True,
+        height=(len(ready_display) * 35 + 60),
+    )
+    st.caption(f"{len(ready_display)} candidates are ready for placement — week > 6 and not yet placed.")
+else:
+    st.markdown('<div class="placeholder-box">No candidates currently ready for placement</div>', unsafe_allow_html=True)
+
+
+# ==========================================================
+# IN TRAINING SECTION
+# ==========================================================
+in_training_df = df[
+    df["Status"].eq("training")
+    & df["Week"].apply(lambda x: isinstance(x, (int, float)) and x <= 6)
+]
+
+if not in_training_df.empty:
+    st.markdown("---")
+    st.markdown("### 🏋️ In Training (Weeks 1–5)")
+
+    train_cols = [col for col in ["MIT Name", "Training Site", "Location", "Week", "Salary", "Level"] if col in in_training_df.columns]
+    train_display = in_training_df[train_cols].copy().fillna("—")
+
+    if "Salary" in train_display.columns:
+        train_display["Salary"] = (
+            train_display["Salary"].astype(str).str.replace("$", "").str.replace(",", "").replace("nan", "TBD")
+        )
+
+    st.dataframe(
+        train_display,
+        use_container_width=True,
+        hide_index=True,
+        height=(len(train_display) * 35 + 60),
+    )
+    st.caption(f"{len(train_display)} candidates currently in training (weeks 1–5).")
+else:
+    st.markdown('<div class="placeholder-box">No candidates currently in training</div>', unsafe_allow_html=True)
+
+
 # ---- OFFER PENDING SECTION ----
 offer_pending_df = df[df["Status"].str.lower() == "offer pending"]
 if not offer_pending_df.empty:
