@@ -3,6 +3,25 @@ import streamlit as st
 import plotly.express as px
 
 
+st.set_page_config(
+    page_title="MIT Candidate Training Dashboard", 
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
+st.markdown("""
+<style>
+:root, html[data-theme="light"], html[data-theme="dark"] {
+    color-scheme: dark !important;
+    --background-color: #0f1117 !important;
+    --text-color: #e0e0e0 !important;
+}
+[data-testid="stAppViewContainer"], html, body {
+    background-color: #0f1117 !important;
+    color: #e0e0e0 !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
 
 st.markdown("""
     <style>
@@ -28,11 +47,7 @@ st.markdown("""
 # --- Header ---
 st.markdown("<h1>🎓 MIT Candidate Training Dashboard</h1>", unsafe_allow_html=True)
 # ---- PAGE CONFIG ----
-st.set_page_config(
-    page_title="MIT Candidate Training Dashboard", 
-    layout="wide",
-    initial_sidebar_state="collapsed"
-)
+
 st.markdown("""
 <style>
 
