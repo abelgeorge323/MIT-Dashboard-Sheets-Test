@@ -2,47 +2,99 @@ import pandas as pd
 import streamlit as st
 import plotly.express as px
 
-
+# ---- PAGE CONFIG (must come FIRST) ----
 st.set_page_config(
-    page_title="MIT Candidate Training Dashboard", 
+    page_title="MIT Candidate Training Dashboard",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
+
+# ---- FORCE DARK MODE ACROSS ALL BROWSERS ----
+# This locks dark theme even if Streamlit user/browser has light mode set
 st.markdown("""
 <style>
-:root, html[data-theme="light"], html[data-theme="dark"] {
+/* ===== Force Global Dark Mode ===== */
+:root,
+html[data-theme="light"],
+html[data-theme="dark"] {
     color-scheme: dark !important;
-    --background-color: #0f1117 !important;
+    --background-color: #0e1016 !important;
     --text-color: #e0e0e0 !important;
+    --secondary-bg-color: #151820 !important;
+    --primary-color: #4aa8e0 !important;
 }
-[data-testid="stAppViewContainer"], html, body {
-    background-color: #0f1117 !important;
-    color: #e0e0e0 !important;
+
+/* App Containers */
+html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stSidebar"] {
+    background-color: var(--background-color) !important;
+    color: var(--text-color) !important;
+}
+
+/* Metrics, Tables, Expanders, Charts */
+[data-testid="stMetric"],
+[data-testid="stDataFrame"],
+[data-testid="stExpander"],
+[data-testid="stPlotlyChart"],
+[data-testid="stHorizontalBlock"] {
+    background-color: var(--secondary-bg-color) !important;
+    color: var(--text-color) !important;
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 8px;
+}
+
+/* Fix white chart areas (Plotly, Vega-Lite, Matplotlib) */
+.js-plotly-plot, .plot-container, canvas, svg {
+    background-color: transparent !important;
+    color: var(--text-color) !important;
+}
+
+/* Executive clean text style (remove purple glow) */
+h1, h2, h3 {
+    color: #dbe3f0 !important;
+    text-align: center;
+    font-weight: 700;
+    text-shadow: none !important;
+}
+
+/* Table */
+table, th, td {
+    background-color: #171b24 !important;
+    color: #e1e1e1 !important;
+}
+
+/* Hover states */
+div[data-testid="stMetric"]:hover {
+    box-shadow: 0 0 12px rgba(74,168,224,0.25);
+    transform: translateY(-1px);
+    transition: 0.3s ease;
+}
+
+/* Scrollbars */
+* {
+    scrollbar-color: #333 #0e1016 !important;
+}
+
+/* Buttons, dropdowns, text fields */
+button, select, input, textarea {
+    background-color: #1a1d27 !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+}
+button:hover {
+    background-color: #26304a !important;
+}
+
+/* Links and icons */
+a, svg, label {
+    color: #70b8ff !important;
+}
+
+/* Remove duplicate mini title */
+[data-testid="stHeadingContainer"] h1 + div {
+    display: none !important;
 }
 </style>
 """, unsafe_allow_html=True)
-
-
-st.markdown("""
-    <style>
-        :root {
-            color-scheme: dark;
-        }
-        html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stSidebar"] {
-            background-color: #0f1117 !important;
-            color: #e0e0e0 !important;
-        }
-        * {
-            scrollbar-color: #3a3f5a #0f1117 !important;
-        }
-        .stApp {
-            background-color: #0f1117 !important;
-            color: #ffffff !important;
-        }
-    </style>
-""", unsafe_allow_html=True)
-
-
 
 # --- Header ---
 st.markdown("<h1>🎓 MIT Candidate Training Dashboard</h1>", unsafe_allow_html=True)
