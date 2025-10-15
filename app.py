@@ -2,7 +2,7 @@ import pandas as pd
 import streamlit as st
 import plotly.express as px
 
-# --- CSS styling for neon card dashboard ---
+# --- Clean, professional purple theme ---
 st.markdown("""
 <style>
 /* --- Background --- */
@@ -12,59 +12,62 @@ st.markdown("""
 }
 
 /* --- Header --- */
-h1, h2, h3 {
+h1 {
     text-align: center;
     font-weight: 900;
-    font-size: 3rem !important;
-    color: #b49cff;
-    letter-spacing: 1px;
-    margin-top: 0.5em;
-    margin-bottom: 0.8em;
-    text-shadow: 0 0 25px rgba(180, 156, 255, 0.9),
-                 0 0 45px rgba(138, 43, 226, 0.6),
-                 0 0 80px rgba(138, 43, 226, 0.4);
+    font-size: 2.8rem !important;
+    color: #c9b9ff;
+    letter-spacing: 0.5px;
+    margin-top: 0.6em;
+    margin-bottom: 1em;
+    text-shadow: 0 0 10px rgba(180, 156, 255, 0.4),
+                 0 0 20px rgba(138, 43, 226, 0.2);
+}
+
+/* --- Hide duplicate Streamlit title --- */
+h2, h3 {
+    display: none !important;
 }
 
 /* --- Metric card container --- */
 div[data-testid="stMetric"] {
     background: #141622;
-    border-radius: 20px;
-    box-shadow: 0 0 15px rgba(138, 43, 226, 0.4),
-                inset 0 0 10px rgba(138, 43, 226, 0.2);
+    border-radius: 18px;
+    box-shadow: 0 0 10px rgba(138, 43, 226, 0.25),
+                inset 0 0 8px rgba(138, 43, 226, 0.15);
     padding: 25px;
     text-align: center;
-    border: 1px solid rgba(150, 100, 255, 0.2);
+    border: 1px solid rgba(150, 100, 255, 0.15);
     transition: all 0.3s ease-in-out;
 }
 
 div[data-testid="stMetric"]:hover {
-    box-shadow: 0 0 25px rgba(138, 43, 226, 0.7),
-                inset 0 0 15px rgba(138, 43, 226, 0.4);
-    transform: translateY(-2px);
+    box-shadow: 0 0 15px rgba(138, 43, 226, 0.4);
+    transform: translateY(-3px);
 }
 
-/* --- Metric number --- */
+/* --- Metric value --- */
 div[data-testid="stMetricValue"] {
     color: white;
-    font-size: 2.1rem;
+    font-size: 2rem;
     font-weight: 800;
 }
 
 /* --- Metric label --- */
 div[data-testid="stMetricLabel"] {
-    color: #c0bfff;
+    color: #c8c3ff;
     font-size: 1rem;
 }
 
-/* --- Tooltip “i” icons --- */
+/* --- Tooltip icons --- */
 svg[data-testid="stTooltipIcon"] {
     color: #a685ff !important;
-    opacity: 0.9;
+    opacity: 0.85;
     transition: 0.2s;
 }
 svg[data-testid="stTooltipIcon"]:hover {
     color: #d0b8ff !important;
-    transform: scale(1.2);
+    transform: scale(1.15);
 }
 </style>
 """, unsafe_allow_html=True)
