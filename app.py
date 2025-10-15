@@ -2,6 +2,75 @@ import pandas as pd
 import streamlit as st
 import plotly.express as px
 
+# --- CSS styling for neon card dashboard ---
+st.markdown("""
+<style>
+/* --- Background --- */
+[data-testid="stAppViewContainer"] {
+    background-color: #0f1117;
+    color: white;
+}
+
+/* --- Header --- */
+h1, h2, h3 {
+    text-align: center;
+    font-weight: 900;
+    font-size: 3rem !important;
+    color: #b49cff;
+    letter-spacing: 1px;
+    margin-top: 0.5em;
+    margin-bottom: 0.8em;
+    text-shadow: 0 0 25px rgba(180, 156, 255, 0.9),
+                 0 0 45px rgba(138, 43, 226, 0.6),
+                 0 0 80px rgba(138, 43, 226, 0.4);
+}
+
+/* --- Metric card container --- */
+div[data-testid="stMetric"] {
+    background: #141622;
+    border-radius: 20px;
+    box-shadow: 0 0 15px rgba(138, 43, 226, 0.4),
+                inset 0 0 10px rgba(138, 43, 226, 0.2);
+    padding: 25px;
+    text-align: center;
+    border: 1px solid rgba(150, 100, 255, 0.2);
+    transition: all 0.3s ease-in-out;
+}
+
+div[data-testid="stMetric"]:hover {
+    box-shadow: 0 0 25px rgba(138, 43, 226, 0.7),
+                inset 0 0 15px rgba(138, 43, 226, 0.4);
+    transform: translateY(-2px);
+}
+
+/* --- Metric number --- */
+div[data-testid="stMetricValue"] {
+    color: white;
+    font-size: 2.1rem;
+    font-weight: 800;
+}
+
+/* --- Metric label --- */
+div[data-testid="stMetricLabel"] {
+    color: #c0bfff;
+    font-size: 1rem;
+}
+
+/* --- Tooltip “i” icons --- */
+svg[data-testid="stTooltipIcon"] {
+    color: #a685ff !important;
+    opacity: 0.9;
+    transition: 0.2s;
+}
+svg[data-testid="stTooltipIcon"]:hover {
+    color: #d0b8ff !important;
+    transform: scale(1.2);
+}
+</style>
+""", unsafe_allow_html=True)
+
+# --- Header ---
+st.markdown("<h1>🎓 MIT Candidate Training Dashboard</h1>", unsafe_allow_html=True)
 # ---- PAGE CONFIG ----
 st.set_page_config(
     page_title="MIT Candidate Training Dashboard", 
