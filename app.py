@@ -2,168 +2,28 @@ import pandas as pd
 import streamlit as st
 import plotly.express as px
 
-# --- Enforce Full Dark Mode Theme ---
+
+
 st.markdown("""
-<style>
-
-/* Global App Background */
-html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stSidebar"] {
-    background-color: #0f1117 !important;
-    color: white !important;
-}
-
-/* Metric boxes, charts, tables, expander, cards */
-[data-testid="stMetric"],
-[data-testid="stDataFrame"],
-[data-testid="stExpander"],
-[data-testid="stHorizontalBlock"],
-[data-testid="stMarkdownContainer"] {
-    background-color: #12141c !important;
-    color: white !important;
-    border: 1px solid rgba(138, 43, 226, 0.25);
-    border-radius: 8px;
-}
-
-/* Fix white chart backgrounds (Plotly, Matplotlib, Vega-Lite) */
-.js-plotly-plot,
-.plot-container,
-.stPlotlyChart,
-[data-testid="stVegaLiteChart"],
-canvas {
-    background-color: transparent !important;
-    color: white !important;
-}
-
-/* Title styling — Purple Professional Glow */
-h1, h2, h3 {
-    color: #d4b3ff !important;
-    text-align: center;
-    font-weight: 700;
-    text-shadow: 0 0 10px rgba(170, 100, 255, 0.4);
-}
-
-/* Card hover subtle glow */
-div[data-testid="stHorizontalBlock"]:hover {
-    box-shadow: 0 0 20px rgba(138, 43, 226, 0.25);
-    transition: 0.3s ease;
-}
-
-/* Sidebar, buttons, inputs */
-button, select, input, textarea {
-    background-color: #1a1b27 !important;
-    color: white !important;
-    border: 1px solid rgba(138, 43, 226, 0.4) !important;
-}
-button:hover {
-    background-color: #292b3d !important;
-}
-a {
-    color: #c8a8ff !important;
-}
-
-/* Remove duplicate small titles or tooltips if you have header repetition */
-[data-testid="stHeadingContainer"] h1 + div {
-    display: none !important;
-}
-
-</style>
-""", unsafe_allow_html=True)
-# --- Force dark theme using CSS ---
-st.markdown("""
-<style>
-/* Force dark background globally */
-html, body, [data-testid="stAppViewContainer"], [data-testid="stSidebar"], [data-testid="stHeader"] {
-    background-color: #0f1117 !important;
-    color: white !important;
-}
-
-/* Adjust Streamlit widgets and components */
-[data-testid="stMetric"], [data-testid="stSidebar"] * {
-    background-color: #141622 !important;
-    color: white !important;
-}
-
-/* Dropdowns, tables, inputs */
-div.stTextInput > div > input,
-div[data-baseweb="select"] div,
-div[data-testid="stTable"] {
-    background-color: #1a1b27 !important;
-    color: white !important;
-}
-
-/* Links, icons, etc. */
-a, svg, button, label {
-    color: #c8a8ff !important;
-}
-</style>
+    <style>
+        :root {
+            color-scheme: dark;
+        }
+        html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stSidebar"] {
+            background-color: #0f1117 !important;
+            color: #e0e0e0 !important;
+        }
+        * {
+            scrollbar-color: #3a3f5a #0f1117 !important;
+        }
+        .stApp {
+            background-color: #0f1117 !important;
+            color: #ffffff !important;
+        }
+    </style>
 """, unsafe_allow_html=True)
 
-# --- CSS styling for neon card dashboard ---
-st.markdown("""
-<style>
-/* --- Background --- */
-[data-testid="stAppViewContainer"] {
-    background-color: #0f1117;
-    color: white;
-}
 
-/* --- Header --- */
-h1, h2, h3 {
-    text-align: center;
-    font-weight: 900;
-    font-size: 3rem !important;
-    color: #b49cff;
-    letter-spacing: 1px;
-    margin-top: 0.5em;
-    margin-bottom: 0.8em;
-    text-shadow: 0 0 25px rgba(180, 156, 255, 0.9),
-                 0 0 45px rgba(138, 43, 226, 0.6),
-                 0 0 80px rgba(138, 43, 226, 0.4);
-}
-
-/* --- Metric card container --- */
-div[data-testid="stMetric"] {
-    background: #141622;
-    border-radius: 20px;
-    box-shadow: 0 0 15px rgba(138, 43, 226, 0.4),
-                inset 0 0 10px rgba(138, 43, 226, 0.2);
-    padding: 25px;
-    text-align: center;
-    border: 1px solid rgba(150, 100, 255, 0.2);
-    transition: all 0.3s ease-in-out;
-}
-
-div[data-testid="stMetric"]:hover {
-    box-shadow: 0 0 25px rgba(138, 43, 226, 0.7),
-                inset 0 0 15px rgba(138, 43, 226, 0.4);
-    transform: translateY(-2px);
-}
-
-/* --- Metric number --- */
-div[data-testid="stMetricValue"] {
-    color: white;
-    font-size: 2.1rem;
-    font-weight: 800;
-}
-
-/* --- Metric label --- */
-div[data-testid="stMetricLabel"] {
-    color: #c0bfff;
-    font-size: 1rem;
-}
-
-/* --- Tooltip “i” icons --- */
-svg[data-testid="stTooltipIcon"] {
-    color: #a685ff !important;
-    opacity: 0.9;
-    transition: 0.2s;
-}
-svg[data-testid="stTooltipIcon"]:hover {
-    color: #d0b8ff !important;
-    transform: scale(1.2);
-}
-</style>
-""", unsafe_allow_html=True)
 
 # --- Header ---
 st.markdown("<h1>🎓 MIT Candidate Training Dashboard</h1>", unsafe_allow_html=True)
