@@ -204,6 +204,9 @@ def load_jobs_data():
     jobs_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSbD6wUrZEt9kuSQpUT2pw0FMOb7h1y8xeX-hDTeiiZUPjtV0ohK_WcFtCSt_4nuxdtn9zqFS8z8aGw/pub?gid=116813539&single=true&output=csv"
     try:
         jobs_df = pd.read_csv(jobs_url, skiprows=5, header=0)
+
+# Remove any unnamed index columns automatically
+        jobs_df = jobs_df.loc[:, ~jobs_df.columns.str.contains('^Unnamed')]
         if 'JV Link' in jobs_df.columns:
             jobs_df = jobs_df.drop('JV Link', axis=1)
         if 'JV ID' in jobs_df.columns:
