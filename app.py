@@ -201,3 +201,41 @@ with left_col:
         st.dataframe(jobs_df, use_container_width=True, height=450, hide_index=True)
     else:
         st.markdown('<div class="placeholder-box">No job positions data available</div>', unsafe_allow_html=True)
+
+# ---- OFFER PENDING SECTION ----
+offer_pending_df = df[df["Status"].str.lower() == "offer pending"]
+
+if not offer_pending_df.empty:
+    st.markdown("---")
+    st.markdown("### 🤝 Offer Pending Candidates")
+
+    # Select only columns that exist safely
+    offer_cols = []
+    for col in ["MIT Name", "New Candidate Name", "Training Site", "Location", "Salary", "Level", "Notes"]:
+        if col in offer_pending_df.columns:
+            offer_cols.append(col)
+
+    # Unify candidate name column
+    if "MIT Name" not in offer_pending_df.columns and "New Candidate Name" in offer_pending_df.columns:
+        offer_pending_df["MIT Name"] = offer_pending_df["New Candidate Name"]
+
+    offer_pending_display = offer_pending_df[offer_cols].copy()
+
+    # Format salary column
+    if "Salary" in offer_pending_display.columns:
+        offer_pending_display["Salary"] = offer_pending_display["Salary"].apply(
+            lambda x: f"${x:,.0f}" if pd.notna(x) and isinstance(x, (int, float)) and x > 0 else "TBD"
+        )
+
+    # Replace NaNs with placeholders
+    offer_pending_display = offer_pending_display.fillna("None")
+
+    # Display the table
+    st.dataframe(
+        offer_pending_display,
+        use_container_width=True,
+        hide_index=True,
+    )
+
+    st.caption(f"{len(offer_pending_display)} candidates with pending offers – awaiting final approval/acceptance")
+
