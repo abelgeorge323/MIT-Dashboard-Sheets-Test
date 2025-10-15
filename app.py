@@ -292,7 +292,7 @@ col4.metric("In Training (Weeks 1–5)", in_training)
 col5.metric("Offer Pending", offer_pending)
 
 # ---- CHART ----
-
+st.markdown("---")
 left_col, right_col = st.columns([1, 1])
 color_map = {
     "Ready for Placement": "#2E91E5",
@@ -307,35 +307,11 @@ chart_data = pd.DataFrame({
 with right_col:
     st.subheader("📊 Candidate Status Overview")
     fig_pie = px.pie(
-    chart_data,
-    names="Category",
-    values="Count",
-    hole=0.45,
-    color="Category",
-    color_discrete_map=color_map,
-)
-
-# Move labels *inside* the donut and remove legend
-fig_pie.update_traces(
-    textinfo="percent+label",
-    textposition="inside",
-    insidetextorientation="radial",
-    textfont_size=16,
-    textfont_color="white",
-    hoverinfo="label+percent+value",
-)
-
-# Clean dark theme layout
-fig_pie.update_layout(
-    showlegend=False,
-    paper_bgcolor="#0E1117",
-    plot_bgcolor="#0E1117",
-    font_color="white",
-    margin=dict(t=40, b=0, l=0, r=0),
-    height=400,
-)
-
-st.plotly_chart(fig_pie, use_container_width=True)
+        chart_data, names="Category", values="Count", hole=0.45,
+        color="Category", color_discrete_map=color_map
+    )
+    fig_pie.update_layout(paper_bgcolor="#0E1117", plot_bgcolor="#0E1117", font_color="white", height=400)
+    st.plotly_chart(fig_pie, use_container_width=True)
 
 with left_col:
     st.subheader("📍 Open Job Positions")
