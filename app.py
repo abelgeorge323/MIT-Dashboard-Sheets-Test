@@ -8,6 +8,67 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed"
 )
+st.markdown("""
+<style>
+
+/* --- Page background --- */
+[data-testid="stAppViewContainer"] {
+    background-color: #0f1117;
+    color: white;
+}
+
+/* --- Header styling (title) --- */
+h1 {
+    text-align: center;
+    font-weight: 700;
+    color: #9f8bff; /* light purple-blue glow */
+    text-shadow: 0 0 15px rgba(159, 139, 255, 0.8);
+}
+
+/* --- Metric cards --- */
+div[data-testid="stMetric"] {
+    background: #141622;
+    border-radius: 20px;
+    box-shadow: 0 0 15px rgba(138, 43, 226, 0.4),
+                inset 0 0 10px rgba(138, 43, 226, 0.2);
+    padding: 25px;
+    text-align: center;
+    border: 1px solid rgba(150, 100, 255, 0.2);
+    transition: all 0.3s ease-in-out;
+}
+
+/* --- Hover glow for metrics --- */
+div[data-testid="stMetric"]:hover {
+    box-shadow: 0 0 25px rgba(138, 43, 226, 0.7),
+                inset 0 0 15px rgba(138, 43, 226, 0.4);
+    transform: translateY(-2px);
+}
+
+/* --- Metric number --- */
+div[data-testid="stMetricValue"] {
+    color: white;
+    font-size: 2rem;
+    font-weight: 800;
+}
+
+/* --- Metric label text --- */
+div[data-testid="stMetricLabel"] {
+    color: #c0bfff;
+    font-size: 1rem;
+}
+
+/* --- Tooltip icons --- */
+svg[data-testid="stTooltipIcon"] {
+    color: #a685ff;
+}
+
+/* --- Top info banner (optional) --- */
+[data-testid="stMarkdownContainer"] p {
+    color: #d8d8ff;
+}
+
+</style>
+""", unsafe_allow_html=True)
 
 # ---- CUSTOM STYLING ----
 st.markdown("""
