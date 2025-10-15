@@ -10,46 +10,95 @@ st.set_page_config(
 )
 
 # ---- CUSTOM STYLING ----
+# ---- CUSTOM STYLING ----
 st.markdown("""
     <style>
-        :root { color-scheme: dark; }
-        html, body, [data-testid="stApp"], [data-testid="stAppViewContainer"] {
-            background-color: #0E1117 !important;
-            color: #FAFAFA !important;
+        /* Force global dark mode */
+        :root {
+            color-scheme: dark;
         }
-        * { color-scheme: dark !important; }
-        section[data-testid="stSidebar"] { background-color: #1E1E1E !important; }
-        p, span, div, label, h1, h2, h3, h4, h5, h6 { color: #FAFAFA !important; }
-        .dashboard-title {
-            font-size: clamp(1.6rem, 3.2vw, 2.3rem);
-            font-weight: 700;
-            background: linear-gradient(90deg, #6C63FF, #00B4DB);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 10px;
+
+        /* Page background and default text */
+        body, .stApp {
+            background-color: #0b0e14 !important;
+            color: #f5f5f5 !important;
         }
-        div[data-testid="stMetric"] {
-            background: #1E1E1E;
-            border-radius: 15px;
-            padding: 20px 25px;
-            box-shadow: 0 0 12px rgba(108, 99, 255, 0.25);
-            border-left: 6px solid #6C63FF;
-            transition: 0.3s ease;
-            min-width: 220px;
+
+        /* Header and titles */
+        h1, h2, h3, h4, h5, h6, p, span, div {
+            color: #f5f5f5 !important;
         }
-        div[data-testid="stMetric"]:hover {
-            box-shadow: 0 0 25px rgba(108, 99, 255, 0.5);
-            transform: scale(1.03);
-        }
+
+        /* Metric cards (info boxes) */
         div[data-testid="stMetricValue"] {
-            color: white !important;
-            font-size: clamp(22px, 2.2vw, 30px) !important;
-            font-weight: bold !important;
+            font-size: 2rem !important;
+            font-weight: 700 !important;
         }
+
         div[data-testid="stMetricLabel"] {
-            color: #E5E7EB !important;
-            font-size: clamp(12px, 1.2vw, 14px) !important;
+            font-size: 1rem !important;
+            color: #bbbbbb !important;
         }
+
+        /* Card container */
+        .stMetric {
+            background: #15181e !important;
+            border-radius: 16px !important;
+            padding: 24px !important;
+            box-shadow: 0 0 15px rgba(108, 99, 255, 0.15);
+            text-align: center;
+        }
+
+        /* Data source banner */
+        .data-source {
+            background-color: #143d33;
+            padding: 12px 18px;
+            border-radius: 10px;
+            font-weight: 500;
+            color: #e1e1e1;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+        }
+
+        /* Tables (Offer Pending, etc.) */
+        [data-testid="stDataFrame"] {
+            border-radius: 12px !important;
+            overflow: hidden !important;
+            box-shadow: 0 0 10px rgba(108, 99, 255, 0.15);
+        }
+
+        table {
+            background-color: #14171c !important;
+            border-collapse: collapse !important;
+            width: 100%;
+        }
+
+        th {
+            background-color: #1f2430 !important;
+            color: #e1e1e1 !important;
+            font-weight: 600 !important;
+            text-transform: uppercase;
+        }
+
+        td {
+            background-color: #171a21 !important;
+            color: #d7d7d7 !important;
+            font-size: 0.95rem !important;
+            border-top: 1px solid #252a34 !important;
+        }
+
+        tr:hover td {
+            background-color: #1e2230 !important;
+        }
+
+        /* Offer Pending Section Title */
+        .pending-title {
+            font-size: 1.8rem !important;
+            font-weight: 700 !important;
+            color: #ffd95e !important;
+            margin-bottom: 8px !important;
+        }
+
+        /* Placeholder / loading box */
         .placeholder-box {
             background: #1E1E1E;
             border-radius: 12px;
@@ -59,8 +108,16 @@ st.markdown("""
             color: #bbb;
             box-shadow: 0 0 10px rgba(108, 99, 255, 0.1);
         }
+
+        /* Subtle glowing border for all main boxes */
+        .main-card {
+            border: 1px solid rgba(108, 99, 255, 0.15);
+            border-radius: 16px;
+        }
+
     </style>
 """, unsafe_allow_html=True)
+
 
 # ---- LOAD DATA ----
 @st.cache_data(ttl=300)
