@@ -2,6 +2,36 @@ import pandas as pd
 import streamlit as st
 import plotly.express as px
 
+# --- Force dark theme using CSS ---
+st.markdown("""
+<style>
+/* Force dark background globally */
+html, body, [data-testid="stAppViewContainer"], [data-testid="stSidebar"], [data-testid="stHeader"] {
+    background-color: #0f1117 !important;
+    color: white !important;
+}
+
+/* Adjust Streamlit widgets and components */
+[data-testid="stMetric"], [data-testid="stSidebar"] * {
+    background-color: #141622 !important;
+    color: white !important;
+}
+
+/* Dropdowns, tables, inputs */
+div.stTextInput > div > input,
+div[data-baseweb="select"] div,
+div[data-testid="stTable"] {
+    background-color: #1a1b27 !important;
+    color: white !important;
+}
+
+/* Links, icons, etc. */
+a, svg, button, label {
+    color: #c8a8ff !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
 # --- CSS styling for neon card dashboard ---
 st.markdown("""
 <style>
