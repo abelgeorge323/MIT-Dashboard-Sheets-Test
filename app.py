@@ -292,7 +292,7 @@ col4.metric("In Training (Weeks 1–5)", in_training)
 col5.metric("Offer Pending", offer_pending)
 
 # ---- CHART ----
-st.markdown("---")
+
 left_col, right_col = st.columns([1, 1])
 color_map = {
     "Ready for Placement": "#2E91E5",
