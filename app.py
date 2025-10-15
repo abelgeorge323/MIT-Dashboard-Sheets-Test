@@ -99,24 +99,7 @@ def load_data():
         )
         df["Salary"] = pd.to_numeric(df["Salary"], errors="coerce")
 
-    def infer_readiness(row):
-        status = str(row.get("Status", "")).strip()
-        week = row.get("Week", None)
-        if status == "Offer Pending":
-            return "Offer Pending"
-        if status == "Offer Accepted":
-            return "Started MIT Training"
-        if status == "Training":
-            if isinstance(week, int):
-                return "Ready for Placement" if week >= 6 else "In Training"
-            return "Started MIT Training"
-        if isinstance(week, str) and "from start" in week:
-            return "Starting MIT Training"
-        if isinstance(week, int):
-            return "Ready for Placement" if week >= 6 else "In Training"
-        return "Started MIT Training"
-
-    df["Readiness"] = df.apply(infer_readiness, axis=1)
+    df["Status"] = df["Status"].astype(str).str.strip().str.lower()
     return df, data_source
 
 
@@ -149,11 +132,8 @@ st.markdown('<div class="dashboard-title">🎓 MIT Candidate Training Dashboard<
 if data_source == "Google Sheets":
     st.success(f"📊 Data Source: {data_source} | Last Updated: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
-# ---- METRICS (STRICT LOGIC) ----
-# Clean and normalize status text
-df["Status"] = df["Status"].astype(str).str.strip().str.lower()
-
-# Status logic following spreadsheet
+# ---- METRICS (UPDATED LOGIC) ----
+# Offer Pending and Total Candidate logic
 offer_pending = len(df[df["Status"] == "offer pending"])
 offer_accepted = len(df[df["Status"] == "offer accepted"])
 non_identified = len(
@@ -161,8 +141,22 @@ non_identified = len(
 )
 total_candidates = non_identified + offer_accepted
 
-ready = (df["Readiness"] == "Ready for Placement").sum()
-in_training = (df["Readiness"] == "In Training").sum()
+# ✅ Ready for Placement: week > 6 and not placed/offered
+ready_for_placement = df[
+    df["Week"].apply(lambda x: isinstance(x, (int, float)) and x > 6)
+    & (~df["Status"].isin(["position identified", "offer pending", "offer accepted"]))
+    & (df["Status"].notna())
+]
+ready = len(ready_for_placement)
+
+# ✅ In Training: week ≤ 6 and currently “training”
+in_training = len(
+    df[
+        df["Status"].eq("training")
+        & df["Week"].apply(lambda x: isinstance(x, (int, float)) and x <= 6)
+    ]
+)
+
 open_jobs = len(jobs_df) if not jobs_df.empty else 0
 
 # ---- DISPLAY ----
@@ -179,20 +173,21 @@ left_col, right_col = st.columns([1, 1])
 color_map = {
     "Ready for Placement": "#2E91E5",
     "In Training": "#E15F99",
-    "Started MIT Training": "#1CA71C",
-    "Starting MIT Training": "#FBB13C",
     "Offer Pending": "#A020F0",
 }
+# Updated chart source
+chart_data = pd.DataFrame({
+    "Category": ["Ready for Placement", "In Training", "Offer Pending"],
+    "Count": [ready, in_training, offer_pending]
+})
 with right_col:
-    st.subheader("📊 Candidate Readiness Mix")
-    readiness_counts = df["Readiness"].value_counts().reset_index()
-    readiness_counts.columns = ["Readiness", "Count"]
+    st.subheader("📊 Candidate Status Overview")
     fig_pie = px.pie(
-        readiness_counts,
-        names="Readiness",
+        chart_data,
+        names="Category",
         values="Count",
         hole=0.45,
-        color="Readiness",
+        color="Category",
         color_discrete_map=color_map,
     )
     fig_pie.update_layout(
