@@ -254,6 +254,7 @@ def load_jobs_data():
         return pd.DataFrame()
 
 # ---- LOAD ----
+st.cache_data.clear()
 df, data_source = load_data()
 jobs_df = load_jobs_data()
 
