@@ -93,6 +93,22 @@ div[data-testid="stMetric"]:hover {
     transition: none !important;
 }
 
+/* Fix expander content text visibility */
+[data-testid="stExpander"] div,
+[data-testid="stExpander"] p,
+[data-testid="stExpander"] span,
+[data-testid="stExpander"] strong,
+[data-testid="stExpander"] markdown,
+[data-testid="stExpander"] .stMarkdown {
+    color: #e0e0e0 !important;
+    background-color: transparent !important;
+}
+
+/* Ensure expander content area has proper background */
+[data-testid="stExpander"] > div {
+    background-color: var(--secondary-bg-color) !important;
+}
+
 /* Scrollbars */
 * {
     scrollbar-color: #333 #0e1016 !important;
