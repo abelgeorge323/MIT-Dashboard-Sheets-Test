@@ -2,37 +2,79 @@ import pandas as pd
 import streamlit as st
 import plotly.express as px
 
-
-# --- Force Streamlit dark theme at the engine level ---
+# ---- PAGE CONFIG (must come FIRST) ----
 st.set_page_config(
     page_title="MIT Candidate Training Dashboard",
     layout="wide",
-    initial_sidebar_state="collapsed",
-    page_icon="🎓",
-    # 👇 this injects a dark theme baseline before any CSS
-    theme={
-        "base": "dark",
-        "primaryColor": "#4aa8e0",
-        "backgroundColor": "#0e1016",
-        "secondaryBackgroundColor": "#151820",
-        "textColor": "#e0e0e0",
-    }
+    initial_sidebar_state="collapsed"
 )
 
-# --- Hard override for browsers that ignore theme (Streamlit Cloud / Safari) ---
+# ---- FORCE DARK MODE ACROSS ALL BROWSERS ----
+# This locks dark theme even if Streamlit user/browser has light mode set
 st.markdown("""
 <style>
-:root, html[data-theme="light"], html[data-theme="dark"] {
+/* ===== Force Global Dark Mode ===== */
+:root,
+html[data-theme="light"],
+html[data-theme="dark"] {
     color-scheme: dark !important;
+    --background-color: #0e1016 !important;
+    --text-color: #e0e0e0 !important;
+    --secondary-bg-color: #151820 !important;
+    --primary-color: #4aa8e0 !important;
 }
 
-/* Global background and font color */
-html, body, [data-testid="stAppViewContainer"], [data-testid="stSidebar"], [data-testid="stHeader"] {
-    background-color: #0e1016 !important;
-    color: #e0e0e0 !important;
+/* App Containers */
+html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stSidebar"] {
+    background-color: var(--background-color) !important;
+    color: var(--text-color) !important;
 }
 
-/* Sidebar, inputs, buttons */
+/* Metrics, Tables, Expanders, Charts */
+[data-testid="stMetric"],
+[data-testid="stDataFrame"],
+[data-testid="stExpander"],
+[data-testid="stPlotlyChart"],
+[data-testid="stHorizontalBlock"] {
+    background-color: var(--secondary-bg-color) !important;
+    color: var(--text-color) !important;
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 8px;
+}
+
+/* Fix white chart areas (Plotly, Vega-Lite, Matplotlib) */
+.js-plotly-plot, .plot-container, canvas, svg {
+    background-color: transparent !important;
+    color: var(--text-color) !important;
+}
+
+/* Executive clean text style (remove purple glow) */
+h1, h2, h3 {
+    color: #dbe3f0 !important;
+    text-align: center;
+    font-weight: 700;
+    text-shadow: none !important;
+}
+
+/* Table */
+table, th, td {
+    background-color: #171b24 !important;
+    color: #e1e1e1 !important;
+}
+
+/* Hover states */
+div[data-testid="stMetric"]:hover {
+    box-shadow: 0 0 12px rgba(74,168,224,0.25);
+    transform: translateY(-1px);
+    transition: 0.3s ease;
+}
+
+/* Scrollbars */
+* {
+    scrollbar-color: #333 #0e1016 !important;
+}
+
+/* Buttons, dropdowns, text fields */
 button, select, input, textarea {
     background-color: #1a1d27 !important;
     color: #ffffff !important;
@@ -42,54 +84,166 @@ button:hover {
     background-color: #26304a !important;
 }
 
-/* Dataframes, expanders, and cards */
-[data-testid="stDataFrame"],
-[data-testid="stExpander"],
-[data-testid="stMetric"],
-[data-testid="stPlotlyChart"],
-[data-testid="stHorizontalBlock"] {
-    background-color: #151820 !important;
-    color: #e0e0e0 !important;
-    border-radius: 10px !important;
-    border: 1px solid rgba(255,255,255,0.05) !important;
+/* Links and icons */
+a, svg, label {
+    color: #70b8ff !important;
 }
 
-/* Table backgrounds */
-table, th, td {
-    background-color: #171b24 !important;
-    color: #e0e0e0 !important;
-}
-
-/* Clean executive header */
-h1, h2, h3 {
-    color: #cde7ff !important;
-    text-shadow: none !important;
-    font-weight: 700 !important;
-    text-align: center !important;
-}
-
-/* Hover interaction */
-div[data-testid="stMetric"]:hover {
-    box-shadow: 0 0 15px rgba(74,168,224,0.25);
-    transform: translateY(-1px);
-    transition: 0.3s ease;
-}
-
-/* Scrollbar */
-* {
-    scrollbar-color: #333 #0e1016 !important;
-}
-
-/* Fix charts (Plotly, Vega-Lite, etc.) */
-.js-plotly-plot, .plot-container, canvas, svg {
-    background-color: transparent !important;
-    color: #e0e0e0 !important;
+/* Remove duplicate mini title */
+[data-testid="stHeadingContainer"] h1 + div {
+    display: none !important;
 }
 </style>
 """, unsafe_allow_html=True)
 
 # --- Header ---
 st.markdown("<h1>🎓 MIT Candidate Training Dashboard</h1>", unsafe_allow_html=True)
+# ---- PAGE CONFIG ----
+
+st.markdown("""
+<style>
+
+/* --- Page background --- */
+[data-testid="stAppViewContainer"] {
+    background-color: #0f1117;
+    color: white;
+}
+
+/* --- Header styling (title) --- */
+h1 {
+    text-align: center;
+    font-weight: 700;
+    color: #9f8bff; /* light purple-blue glow */
+    text-shadow: 0 0 15px rgba(159, 139, 255, 0.8);
+}
+
+/* --- Metric cards --- */
+div[data-testid="stMetric"] {
+    background: #141622;
+    border-radius: 20px;
+    box-shadow: 0 0 15px rgba(138, 43, 226, 0.4),
+                inset 0 0 10px rgba(138, 43, 226, 0.2);
+    padding: 25px;
+    text-align: center;
+    border: 1px solid rgba(150, 100, 255, 0.2);
+    transition: all 0.3s ease-in-out;
+}
+
+/* --- Hover glow for metrics --- */
+div[data-testid="stMetric"]:hover {
+    box-shadow: 0 0 25px rgba(138, 43, 226, 0.7),
+                inset 0 0 15px rgba(138, 43, 226, 0.4);
+    transform: translateY(-2px);
+}
+
+/* --- Metric number --- */
+div[data-testid="stMetricValue"] {
+    color: white;
+    font-size: 2rem;
+    font-weight: 800;
+}
+
+/* --- Metric label text --- */
+div[data-testid="stMetricLabel"] {
+    color: #c0bfff;
+    font-size: 1rem;
+}
+
+/* --- Tooltip icons --- */
+svg[data-testid="stTooltipIcon"] {
+    color: #a685ff;
+}
+
+/* --- Top info banner (optional) --- */
+[data-testid="stMarkdownContainer"] p {
+    color: #d8d8ff;
+}
+
+</style>
+""", unsafe_allow_html=True)
+
+# ---- CUSTOM STYLING ----
+st.markdown("""
+    <style>
+        :root {
+            color-scheme: dark;
+        }
+        body, .stApp {
+            background-color: #0b0e14 !important;
+            color: #f5f5f5 !important;
+        }
+        h1, h2, h3, h4, h5, h6, p, span, div {
+            color: #f5f5f5 !important;
+        }
+        div[data-testid="stMetricValue"] {
+            font-size: 2rem !important;
+            font-weight: 700 !important;
+        }
+        div[data-testid="stMetricLabel"] {
+            font-size: 1rem !important;
+            color: #bbbbbb !important;
+        }
+        .stMetric {
+            background: #15181e !important;
+            border-radius: 16px !important;
+            padding: 24px !important;
+            box-shadow: 0 0 15px rgba(108, 99, 255, 0.15);
+            text-align: center;
+        }
+        .data-source {
+            background-color: #143d33;
+            padding: 12px 18px;
+            border-radius: 10px;
+            font-weight: 500;
+            color: #e1e1e1;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+        }
+        [data-testid="stDataFrame"] {
+            border-radius: 12px !important;
+            overflow: hidden !important;
+            box-shadow: 0 0 10px rgba(108, 99, 255, 0.15);
+        }
+        table {
+            background-color: #14171c !important;
+            border-collapse: collapse !important;
+            width: 100%;
+        }
+        th {
+            background-color: #1f2430 !important;
+            color: #e1e1e1 !important;
+            font-weight: 600 !important;
+            text-transform: uppercase;
+        }
+        td {
+            background-color: #171a21 !important;
+            color: #d7d7d7 !important;
+            font-size: 0.95rem !important;
+            border-top: 1px solid #252a34 !important;
+        }
+        tr:hover td {
+            background-color: #1e2230 !important;
+        }
+        .pending-title {
+            font-size: 1.8rem !important;
+            font-weight: 700 !important;
+            color: #ffd95e !important;
+            margin-bottom: 8px !important;
+        }
+        .placeholder-box {
+            background: #1E1E1E;
+            border-radius: 12px;
+            padding: 80px;
+            text-align: center;
+            font-size: 1.2rem;
+            color: #bbb;
+            box-shadow: 0 0 10px rgba(108, 99, 255, 0.1);
+        }
+        .main-card {
+            border: 1px solid rgba(108, 99, 255, 0.15);
+            border-radius: 16px;
+        }
+    </style>
+""", unsafe_allow_html=True)
 
 # ---- LOAD DATA ----
 @st.cache_data(ttl=300)
