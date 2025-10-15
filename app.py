@@ -20,7 +20,6 @@ st.markdown("""
             background-color: #0E1117 !important;
             color: #FAFAFA !important;
         }
-        /* Prevent light mode flashing */
         * {
             color-scheme: dark !important;
         }
@@ -31,7 +30,6 @@ st.markdown("""
         section[data-testid="stSidebar"] {
             background-color: #1E1E1E !important;
         }
-        /* Force all text elements to light color */
         p, span, div, label, h1, h2, h3, h4, h5, h6 {
             color: #FAFAFA !important;
         }
@@ -63,13 +61,12 @@ st.markdown("""
             font-weight: bold !important;
         }
         div[data-testid="stMetricLabel"] {
-            color: #E5E7EB !important; /* ensure light text on dark bg */
+            color: #E5E7EB !important;
             font-size: clamp(12px, 1.2vw, 14px) !important;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        /* Force label/value color across browsers and themes */
         div[data-testid="stMetricLabel"],
         div[data-testid="stMetricLabel"] *,
         div[data-testid="stMetricValue"],
@@ -80,8 +77,10 @@ st.markdown("""
             opacity: 1 !important;
         }
         div[data-testid="stMetricValue"],
-        div[data-testid="stMetricValue"] * { color: #FFFFFF !important; -webkit-text-fill-color: #FFFFFF !important; }
-        /* Help icon inside metrics */
+        div[data-testid="stMetricValue"] * { 
+            color: #FFFFFF !important; 
+            -webkit-text-fill-color: #FFFFFF !important; 
+        }
         div[data-testid="stMetric"] svg path { fill: #E5E7EB !important; }
         @media (max-width: 1400px) {
             div[data-testid="stMetric"] { min-width: 200px; padding: 18px 20px; }
@@ -110,11 +109,7 @@ st.markdown("""
             box-shadow: 0 0 10px rgba(108, 99, 255, 0.1);
         }
         .status-box {
-            background: #1E1E1E;
-            border-radius: 8px;
-            padding: 10px;
-            margin: 10px 0;
-            border-left: 4px solid #6C63FF;
+            display: none !important; /* Hide all loading boxes */
         }
     </style>
 """, unsafe_allow_html=True)
@@ -122,75 +117,46 @@ st.markdown("""
 # ---- LOAD DATA ----
 @st.cache_data(ttl=300)
 def load_data():
-    from datetime import datetime, timedelta
-    
-    # Google Sheets CSV export URLs for both tabs
     main_data_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSbD6wUrZEt9kuSQpUT2pw0FMOb7h1y8xeX-hDTeiiZUPjtV0ohK_WcFtCSt_4nuxdtn9zqFS8z8aGw/pub?gid=1155015355&single=true&output=csv"
-    
     data_source = None
+
     try:
-        st.markdown('<div class="status-box">🔄 Loading main data from Google Sheets...</div>', unsafe_allow_html=True)
-        # Try Google Sheets first - skip first few rows to find headers
         df = pd.read_csv(main_data_url, skiprows=4)
         data_source = "Google Sheets"
-        
-        
-        
     except Exception as e:
-        st.markdown(f'<div class="status-box">⚠️ Google Sheets error: {e}</div>', unsafe_allow_html=True)
-        st.markdown('<div class="status-box">📁 No fallback available - this is a Google Sheets only version</div>', unsafe_allow_html=True)
+        st.error(f"⚠️ Google Sheets error: {e}")
         return pd.DataFrame(), "Error"
-    
-    # Remove completely empty rows and header rows
+
     df = df.dropna(how='all')
-    
-    # Check if required columns exist
     if 'MIT Name' not in df.columns:
-        st.error("❌ Column 'MIT Name' not found in data. Please check the Google Sheet structure.")
-        st.write("Available columns:", df.columns.tolist())
-        st.write("First few rows of data:")
-        st.dataframe(df.head())
+        st.error("❌ Column 'MIT Name' not found.")
         return pd.DataFrame(), "Error"
-    
-    
+
     df = df[df['MIT Name'].notna()]
-    df = df[df['MIT Name'] != 'MIT Name']  # Remove duplicate headers
-    df = df[df['MIT Name'] != 'New Candidate Name']  # Remove template rows
-    
-    # Clean column names
+    df = df[df['MIT Name'] != 'MIT Name']
+    df = df[df['MIT Name'] != 'New Candidate Name']
     df.columns = [c.strip() if isinstance(c, str) else c for c in df.columns]
-    df = df.rename(columns={'Week ': 'Week'})  # Fix trailing space
-    
-    # Convert Start date to datetime
+    df = df.rename(columns={'Week ': 'Week'})
+
     if 'Start date' in df.columns:
         df['Start Date'] = pd.to_datetime(df['Start date'], errors='coerce')
     elif 'Start Date' in df.columns:
         df['Start Date'] = pd.to_datetime(df['Start Date'], errors='coerce')
     else:
-        st.warning("⚠️ No 'Start date' column found")
         df['Start Date'] = None
-    
-    # Calculate weeks dynamically from start date to today
+
     today = pd.Timestamp.now()
-    
+
     def calculate_weeks(row):
         start = row['Start Date']
         if pd.isna(start):
             return None
         if start > today:
-            # Future start date
-            days_until = (start - today).days
-            weeks_until = days_until / 7
-            return f"-{int(weeks_until)} weeks from start"
-        else:
-            # Already started - calculate week number (first 7 days = Week 1)
-            days_since = (today - start).days
-            week_number = (days_since // 7) + 1
-            return int(week_number)
-    
+            return f"-{int((start - today).days / 7)} weeks from start"
+        return int(((today - start).days // 7) + 1)
+
     df['Week'] = df.apply(calculate_weeks, axis=1)
-    
-    # Map vertical codes to full names
+
     vertical_map = {
         'MANU': 'Manufacturing',
         'AUTO': 'Automotive',
@@ -203,330 +169,109 @@ def load_data():
     }
     if 'VERT' in df.columns:
         df['Vertical Full'] = df['VERT'].map(vertical_map).fillna(df['VERT'])
-    
-    # Convert salary to numeric - handle currency formatting
+
     if 'Salary' in df.columns:
-        # Remove dollar signs, commas, and spaces, then convert to numeric
         df['Salary'] = df['Salary'].astype(str).str.replace('$', '').str.replace(',', '').str.replace(' ', '')
         df['Salary'] = pd.to_numeric(df['Salary'], errors='coerce')
-    
-    # Map Status to Readiness categories
+
     def infer_readiness(row):
         status = str(row.get('Status', '')).strip()
         week = row.get('Week', None)
-        
-        # Exclude "Position Identified" from dashboard
         if status == 'Position Identified':
-            return 'Position Identified'  # We'll filter these out
-        
-        # Offer Pending - special category
+            return 'Position Identified'
         if status == 'Offer Pending':
             return 'Offer Pending'
-        
-        # Offer Accepted -> Started MIT Training
         if status == 'Offer Accepted':
             return 'Started MIT Training'
-        
-        # Training status
         if status == 'Training':
             if isinstance(week, int):
-                if week >= 6:
-                    return 'Ready for Placement'
-                elif week >= 1:
-                    return 'In Training'
-                else:
-                    return 'Started MIT Training'
-            else:
-                return 'Started MIT Training'
-        
-        # Future start dates
+                return 'Ready for Placement' if week >= 6 else 'In Training'
+            return 'Started MIT Training'
         if isinstance(week, str) and 'from start' in week:
             return 'Starting MIT Training'
-        
-        # Week-based classification for other statuses
         if isinstance(week, int):
-            if week >= 6:
-                return 'Ready for Placement'
-            elif week >= 1:
-                return 'In Training'
-            else:
-                return 'Started MIT Training'
-        
-        # Default
+            return 'Ready for Placement' if week >= 6 else 'In Training'
         return 'Started MIT Training'
-    
+
     df['Readiness'] = df.apply(infer_readiness, axis=1)
-    
-    # Filter out "Position Identified" candidates
     df = df[df['Readiness'] != 'Position Identified']
-    
+
     return df, data_source
+
 
 @st.cache_data(ttl=300)
 def load_jobs_data():
-    """Load open job positions from Placement Options sheet"""
     jobs_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSbD6wUrZEt9kuSQpUT2pw0FMOb7h1y8xeX-hDTeiiZUPjtV0ohK_WcFtCSt_4nuxdtn9zqFS8z8aGw/pub?gid=116813539&single=true&output=csv"
-    
     try:
-        st.markdown('<div class="status-box">🔄 Loading jobs data from Google Sheets...</div>', unsafe_allow_html=True)
         jobs_df = pd.read_csv(jobs_url, skiprows=5, header=0)
-        st.markdown('<div class="status-box">✅ Successfully loaded jobs from Google Sheets!</div>', unsafe_allow_html=True)
-        
-        # Clean up the data
-        if len(jobs_df) > 0:
-            # Drop JV Link and JV ID columns as requested
-            if 'JV Link' in jobs_df.columns:
-                jobs_df = jobs_df.drop('JV Link', axis=1)
-            if 'JV ID' in jobs_df.columns:
-                jobs_df = jobs_df.drop('JV ID', axis=1)
-            
-            # Remove any completely empty rows
-            jobs_df = jobs_df.dropna(how='all')
-            
-            # Remove rows where Job Title is empty or NaN
-            if 'Job Title' in jobs_df.columns:
-                jobs_df = jobs_df.dropna(subset=['Job Title'])
-                jobs_df = jobs_df[jobs_df['Job Title'].str.strip() != '']
-            
-            # Map VERT codes to full names for jobs
-            vertical_map = {
-                'MANU': 'Manufacturing',
-                'AUTO': 'Automotive',
-                'FIN': 'Finance',
-                'TECH': 'Technology',
-                'AVI': 'Aviation',
-                'DIST': 'Distribution',
-                'RD': 'R&D',
-                'LIFSC': 'Life Science',
-                'Reg & Div': 'Regulatory & Division'
-            }
-            if 'VERT' in jobs_df.columns:
-                jobs_df['Vertical'] = jobs_df['VERT'].map(vertical_map).fillna(jobs_df['VERT'])
-            
-            # Fill NaN values with empty strings for display
-            jobs_df = jobs_df.fillna('')
-            
+        if 'JV Link' in jobs_df.columns:
+            jobs_df = jobs_df.drop('JV Link', axis=1)
+        if 'JV ID' in jobs_df.columns:
+            jobs_df = jobs_df.drop('JV ID', axis=1)
+        jobs_df = jobs_df.dropna(how='all')
+        if 'Job Title' in jobs_df.columns:
+            jobs_df = jobs_df.dropna(subset=['Job Title'])
+            jobs_df = jobs_df[jobs_df['Job Title'].str.strip() != '']
+        jobs_df = jobs_df.fillna('')
         return jobs_df
     except Exception as e:
         st.error(f"Error loading jobs data: {e}")
         return pd.DataFrame()
 
-# Load data
+
+# ---- LOAD ----
 df, data_source = load_data()
 jobs_df = load_jobs_data()
 
 if df.empty:
-    st.error("❌ Unable to load data. Please check the Google Sheet configuration.")
+    st.error("❌ Unable to load data.")
     st.stop()
 
-# ---- DASHBOARD HEADER ----
-st.markdown('<div class="dashboard-title">🎓 MIT Candidate Training Dashboard - Google Sheets Test</div>', unsafe_allow_html=True)
+# ---- HEADER ----
+st.markdown('<div class="dashboard-title">🎓 MIT Candidate Training Dashboard</div>', unsafe_allow_html=True)
 
-# Show data source status
 if data_source == "Google Sheets":
     st.success(f"📊 Data Source: {data_source} | Last Updated: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}")
-elif data_source == "Error":
-    st.error("❌ Error loading data")
-else:
-    st.info(f"📁 Data Source: {data_source}")
 
-# ---- KEY METRICS ----
+# ---- METRICS ----
 total = len(df)
-
-# Buckets per new data structure
 ready = (df["Readiness"] == "Ready for Placement").sum()
-in_training = (df["Readiness"] == "In Training").sum()  # Weeks 1–5
+in_training = (df["Readiness"] == "In Training").sum()
 started_training = (df["Readiness"] == "Started MIT Training").sum()
 starting_training = (df["Readiness"] == "Starting MIT Training").sum()
 offer_pending = (df["Readiness"] == "Offer Pending").sum()
-started_mit_training = int(started_training + starting_training)  # grouped bucket
-
+started_mit_training = int(started_training + starting_training)
 open_jobs = len(jobs_df) if not jobs_df.empty else 0
 
 col1, col2, col3, col4, col5 = st.columns(5)
+col1.metric("Total Candidates", total)
+col2.metric("Open Positions", open_jobs)
+col3.metric("Ready for Placement", ready)
+col4.metric("In Training (Weeks 1–5)", in_training)
+col5.metric("Offer Pending", offer_pending)
 
-# Executive-facing order: Total → Open Positions → Ready → In Training → Offer Pending
-col1.metric(
-    "Total Candidates",
-    total,
-    help="All candidates currently in the MIT program dataset"
-)
-col2.metric(
-    "Open Positions",
-    open_jobs,
-    help="Number of active openings available to place candidates"
-)
-col3.metric(
-    "Ready for Placement",
-    ready,
-    help="Candidates at Week ≥ 6 who are not already placed"
-)
-col4.metric(
-    "In Training (Weeks 1–5)",
-    in_training,
-    help="Candidates actively progressing through Weeks 1–5 of training"
-)
-col5.metric(
-    "Offer Pending",
-    offer_pending,
-    help="Candidates with pending offers awaiting approval"
-)
-
-# ---- VISUAL SECTION ----
+# ---- CHART ----
 st.markdown("---")
 left_col, right_col = st.columns([1, 1])
-
-# High-contrast, colorblind-friendly palette
 color_map = {
-    "Ready for Placement": "#2E91E5",      # blue
-    "In Training": "#E15F99",              # magenta
-    "Started MIT Training": "#1CA71C",     # green
-    "Starting MIT Training": "#FBB13C",    # orange
-    "Offer Pending": "#A020F0"             # purple
+    "Ready for Placement": "#2E91E5",
+    "In Training": "#E15F99",
+    "Started MIT Training": "#1CA71C",
+    "Starting MIT Training": "#FBB13C",
+    "Offer Pending": "#A020F0"
 }
-
-# Right side: pie chart
 with right_col:
     st.subheader("📊 Candidate Readiness Mix")
     readiness_counts = df["Readiness"].value_counts().reset_index()
     readiness_counts.columns = ["Readiness", "Count"]
-
-    fig_pie = px.pie(
-        readiness_counts,
-        names="Readiness",
-        values="Count",
-        hole=0.45,
-        color="Readiness",
-        color_discrete_map=color_map
-    )
-    fig_pie.update_layout(
-        paper_bgcolor="#0E1117",
-        plot_bgcolor="#0E1117",
-        font_color="white",
-        height=400,
-        margin=dict(l=0, r=0, t=30, b=30),
-        showlegend=True,
-    )
-    # Improve readability across devices
-    fig_pie.update_traces(
-        textposition="inside",
-        textinfo="percent+label",
-        textfont=dict(color="#FFFFFF", size=14),
-        marker=dict(line=dict(color="#0B0F14", width=2))
-    )
+    fig_pie = px.pie(readiness_counts, names="Readiness", values="Count", hole=0.45,
+                     color="Readiness", color_discrete_map=color_map)
+    fig_pie.update_layout(paper_bgcolor="#0E1117", plot_bgcolor="#0E1117", font_color="white", height=400)
     st.plotly_chart(fig_pie, use_container_width=True)
 
-# ---- OFFER PENDING SECTION ----
-if offer_pending > 0:
-    st.markdown("---")
-    st.markdown("### 🤝 Offer Pending Candidates")
-    
-    offer_pending_df = df[df["Readiness"] == "Offer Pending"]
-    if 'Training Site' in offer_pending_df.columns and 'Location' in offer_pending_df.columns and 'Salary' in offer_pending_df.columns and 'Level' in offer_pending_df.columns and 'Notes' in offer_pending_df.columns:
-        offer_pending_display = offer_pending_df[['MIT Name', 'Training Site', 'Location', 'Salary', 'Level', 'Notes']].copy()
-        
-        # Format salary
-        offer_pending_display['Salary'] = offer_pending_display['Salary'].apply(
-            lambda x: f"${x:,.0f}" if pd.notna(x) else "TBD"
-        )
-        
-        st.dataframe(offer_pending_display, use_container_width=True, hide_index=True)
-    else:
-        # Fallback if columns don't exist
-        offer_pending_display = offer_pending_df[['MIT Name', 'Status', 'Readiness']].copy()
-        st.dataframe(offer_pending_display, use_container_width=True, hide_index=True)
-    
-    st.caption(f"{offer_pending} candidates with pending offers - awaiting final approval/acceptance")
-
-# Left side: open job positions
 with left_col:
     st.subheader("📍 Open Job Positions")
     if not jobs_df.empty:
-        # Create a cleaner display of job positions
-        display_jobs = jobs_df.copy()
-        
-        # Create a more concise summary column
-        if 'Job Title' in display_jobs.columns and 'Account' in display_jobs.columns and 'City' in display_jobs.columns and 'State' in display_jobs.columns:
-            display_jobs['Position'] = display_jobs.apply(
-                lambda row: f"{row.get('Job Title', 'N/A')} - {row.get('Account', 'N/A')}", 
-                axis=1
-            )
-            display_jobs['Location'] = display_jobs.apply(
-                lambda row: f"{row.get('City', 'N/A')}, {row.get('State', 'N/A')}", 
-                axis=1
-            )
-            
-            # Show clean columns including salary
-            clean_columns = ['Position', 'Location', 'Vertical', 'Salary']
-            available_columns = [col for col in clean_columns if col in display_jobs.columns]
-            
-            if available_columns:
-                # Style the dataframe for better readability
-                styled_df = display_jobs[available_columns].copy()
-                st.dataframe(
-                    styled_df, 
-                    use_container_width=True,
-                    height=450,
-                    hide_index=True
-                )
-            else:
-                st.dataframe(display_jobs, use_container_width=True, height=450)
-        else:
-            st.dataframe(display_jobs, use_container_width=True, height=450)
+        st.dataframe(jobs_df, use_container_width=True, height=450, hide_index=True)
     else:
         st.markdown('<div class="placeholder-box">No job positions data available</div>', unsafe_allow_html=True)
-
-# ---- QUICK INSIGHTS ----
-st.markdown("<h3>🧠 Quick Insights</h3>", unsafe_allow_html=True)
-
-# Helper to list names by readiness category
-def get_names(stage):
-    return ", ".join(df.loc[df["Readiness"] == stage, "MIT Name"].dropna().tolist())
-
-ready_names      = get_names("Ready for Placement")
-inprog_names     = get_names("In Training")
-started_names    = get_names("Started MIT Training")
-starting_names   = get_names("Starting MIT Training")
-offer_pending_names = get_names("Offer Pending")
-
-st.markdown(f"""
-<div class="insights-box">
-<ul>
-    <li><b>{ready}</b> Ready for Placement (Week ≥ 6):<br><i>{ready_names or '—'}</i></li>
-    <li><b>{in_training}</b> In Training (Weeks 1–5):<br><i>{inprog_names or '—'}</i></li>
-    <li><b>{started_mit_training}</b> Started MIT Training</li>
-    <ul>
-        <li><b>{started_training}</b> Currently in Training:<br><i>{started_names or '—'}</i></li>
-        <li><b>{starting_training}</b> Starting Soon:<br><i>{starting_names or '—'}</i></li>
-    </ul>
-    <li><b>{offer_pending}</b> Offer Pending:<br><i>{offer_pending_names or '—'}</i></li>
-</ul>
-</div>
-""", unsafe_allow_html=True)
-
-# ---- FULL DATA TABLE ----
-st.markdown("---")
-st.markdown("### 📋 Full MIT Roster")
-
-# Create a display dataframe with key columns
-available_columns = ['MIT Name', 'Week', 'Start Date', 'Salary', 'Status', 'Readiness']
-display_columns = [col for col in available_columns if col in df.columns]
-
-if display_columns:
-    display_df = df[display_columns].copy()
-    
-    # Format salary column for display
-    if 'Salary' in display_df.columns:
-        display_df['Salary'] = display_df['Salary'].apply(
-            lambda x: f"${x:,.0f}" if pd.notna(x) else "—"
-        )
-    
-    # Format Start Date
-    if 'Start Date' in display_df.columns:
-        display_df['Start Date'] = pd.to_datetime(display_df['Start Date']).dt.strftime('%m/%d/%Y')
-    
-    st.dataframe(display_df, use_container_width=True, hide_index=True)
-else:
-    st.dataframe(df, use_container_width=True, hide_index=True)
-
-st.caption("🔄 LIVE DATA: Loading from Google Sheets | Auto-refreshes every 5 minutes | Weeks calculated dynamically from start date")
