@@ -218,6 +218,8 @@ def load_data():
         return int(((today - start).days // 7) + 1)
 
     df["Week"] = df.apply(calc_weeks, axis=1)
+    df["Week"] = pd.to_numeric(df["Week"], errors="coerce")
+
 
     if "Salary" in df.columns:
         df["Salary"] = (
