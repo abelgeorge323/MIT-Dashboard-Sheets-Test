@@ -304,23 +304,36 @@ candidates_df = candidates_df.dropna(subset=["MIT Name"])
 if not jobs_df.empty and not candidates_df.empty:
 
     # ---- Salary parsing logic ----
+
     def parse_salary(s):
-        if pd.isna(s) or not isinstance(s, str):
-            return None
-        s = s.replace("$", "").replace(",", "").strip()
-        if "-" in s:
-            try:
-                low, high = s.split("-")
-                return (float(low), float(high))
-            except:
-                return None
+    if pd.isna(s):
+        return None
+    if isinstance(s, (int, float)):
+        return float(s)
+    
+    s = str(s).replace("$", "").replace(",", "").strip()
+    # normalize ranges like "70,000 - 75,000" or "70k-75k"
+    s = s.lower().replace("k", "000").replace("–", "-").replace("—", "-")
+    if "-" in s:
         try:
-            return float(s)
-        except:
+            low, high = s.split("-")
+            return (float(low.strip()), float(high.strip()))
+        except ValueError:
             return None
+    try:
+        return float(s)
+    except ValueError:
+        return None
+
+    def midpoint(val):
+    if isinstance(val, tuple):
+        return (val[0] + val[1]) / 2
+    return val if isinstance(val, (int, float)) else None
 
     jobs_df["SalaryRange"] = jobs_df["Salary"].apply(parse_salary)
     candidates_df["SalaryRange"] = candidates_df["Salary"].apply(parse_salary)
+    jobs_df["SalaryMid"] = jobs_df["SalaryRange"].apply(midpoint)
+    candidates_df["SalaryMid"] = candidates_df["SalaryRange"].apply(midpoint)
 
     def midpoint(val):
         if isinstance(val, tuple):
