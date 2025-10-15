@@ -330,16 +330,16 @@ if not jobs_df.empty and not candidates_df.empty:
     jobs_df["SalaryMid"] = jobs_df["SalaryRange"].apply(midpoint)
     candidates_df["SalaryMid"] = candidates_df["SalaryRange"].apply(midpoint)
 
-    # ---- Calculate match scores ----
+    # ---- Calculate match scores (your scoring stays the same) ----
     match_results = []
     for _, c in candidates_df.iterrows():
         for _, j in jobs_df.iterrows():
             subscores = {}
 
-            # 1️⃣ Vertical Alignment
+            # 1) Vertical Alignment
             vert_score = 0
             c_vert = str(c.get("VERT", "")).strip().upper()
-            j_vert = str(j.get("VERT", "")).strip().upper()
+            j_vert = str(j.get("VERT", j.get("Vertical", ""))).strip().upper()
             if c_vert == j_vert:
                 vert_score += 30
             exp_str = " ".join(
@@ -350,7 +350,7 @@ if not jobs_df.empty and not candidates_df.empty:
                 vert_score += 10
             subscores["Vertical"] = vert_score
 
-            # 2️⃣ Salary Trajectory
+            # 2) Salary Trajectory
             c_sal, j_sal = c.get("SalaryMid"), j.get("SalaryMid")
             if j_sal and c_sal:
                 if j_sal >= 1.05 * c_sal:
@@ -365,7 +365,7 @@ if not jobs_df.empty and not candidates_df.empty:
                 sal_score = 0
             subscores["Salary"] = sal_score
 
-            # 3️⃣ Geographic Fit
+            # 3) Geographic Fit
             geo_score = 5
             cand_loc = str(c.get("Location", "")).strip().lower()
             job_city = str(j.get("City", "")).strip().lower()
@@ -376,7 +376,7 @@ if not jobs_df.empty and not candidates_df.empty:
                 geo_score = 10
             subscores["Geo"] = geo_score
 
-            # 4️⃣ Confidence
+            # 4) Confidence
             conf = str(c.get("Confidence", "")).lower()
             if "high" in conf:
                 conf_score = 15
@@ -388,7 +388,7 @@ if not jobs_df.empty and not candidates_df.empty:
                 conf_score = 10
             subscores["Confidence"] = conf_score
 
-            # 5️⃣ Readiness
+            # 5) Readiness
             week = c.get("Week")
             if isinstance(week, (int, float)):
                 if week >= 6:
@@ -401,15 +401,20 @@ if not jobs_df.empty and not candidates_df.empty:
                 ready_score = 5
             subscores["Readiness"] = ready_score
 
-            # Total Score
             total = sum(subscores.values())
+
+            # Safe access for fields that may vary by sheet
+            title_val = j.get("Title") or j.get("Job Title") or "—"
+            vert_val = j.get("VERT") or j.get("Vertical") or "—"
+            acct_val = j.get("Account") or j.get("Job Account") or "—"
+
             match_results.append({
                 "Candidate": c["MIT Name"],
-                "Job Account": j["Account"],
-                "Title": j.get("Title", "—"),
-                "City": j["City"],
-                "State": j["State"],
-                "VERT": j["VERT"],
+                "Job Account": acct_val,
+                "Title": title_val,
+                "City": j.get("City", ""),
+                "State": j.get("State", ""),
+                "VERT": vert_val,
                 "Total Score": round(total, 1),
                 "Week": c.get("Week"),
                 "Status": c.get("Status")
@@ -418,29 +423,31 @@ if not jobs_df.empty and not candidates_df.empty:
     match_df = pd.DataFrame(match_results)
     match_df = match_df.sort_values("Total Score", ascending=False)
 
-    # ---- Split ready vs training ----
-    ready_df = match_df[match_df["Week"] >= 6]
-    training_df = match_df[(match_df["Week"] > 0) & (match_df["Week"] < 6)]
+    # Ready first, then training
+    match_df["is_ready"] = (match_df["Week"] >= 6).astype(int)
+    match_df = match_df.sort_values(["is_ready", "Week", "Total Score"], ascending=[False, False, False])
 
-    # ---- Combined display ----
-    combined = (
-        pd.concat([ready_df, training_df])
-        .drop_duplicates(subset=["Candidate", "Job Account"])
-        .sort_values(by=["Week", "Total Score"], ascending=[False, False])
-    )
-
-    # ---- Expanders per candidate ----
-    for candidate, group in combined.groupby("Candidate"):
+    # Expanders per candidate (ready auto-expanded)
+    for candidate, group in match_df.groupby("Candidate", sort=False):
         week = group["Week"].iloc[0]
         status = "Ready for Placement" if week >= 6 else "In Training"
         color = "🟢" if week >= 6 else "🟡"
-        top_jobs = group.nlargest(3, "Total Score")
+        expanded = True if week >= 6 else False
 
-        with st.expander(f"{color} {candidate} — {status} (Week {int(week)})"):
-            for idx, row in enumerate(top_jobs.itertuples(), start=1):
+        top_jobs = group.nlargest(3, "Total Score")
+        with st.expander(f"{color} {candidate} — {status} (Week {int(week)})", expanded=expanded):
+            # iterate with dicts -> no KeyError from spaces/underscores
+            for idx, rec in enumerate(top_jobs.to_dict(orient="records"), start=1):
+                title = rec.get("Title", "—")
+                account = rec.get("Job Account") or rec.get("Job_Account") or rec.get("Account") or "—"
+                city = rec.get("City", "")
+                state = rec.get("State", "")
+                vert = rec.get("VERT", "—")
+                score = rec.get("Total Score", 0)
+
                 st.markdown(
-                    f"**{idx}. {row.Title} — {row._asdict()['Job Account']}**  \n"
-                    f"📍 {row.City}, {row.State} | 🏢 {row.VERT} | ⭐ Match Score: {row._asdict()['Total Score']}/100"
+                    f"**{idx}. {title} — {account}**  \n"
+                    f"📍 {city}, {state} | 🏢 {vert} | ⭐ Match Score: {score}/100"
                 )
             st.markdown("---")
 
@@ -449,6 +456,7 @@ else:
         '<div class="placeholder-box">No data available to compute match scores</div>',
         unsafe_allow_html=True
     )
+
 
 
 
