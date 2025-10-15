@@ -48,6 +48,23 @@ html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-
     color: var(--text-color) !important;
 }
 
+/* Force Plotly charts to use dark theme */
+.plotly .main-svg {
+    background-color: transparent !important;
+}
+
+.plotly .bg {
+    fill: transparent !important;
+}
+
+/* Fix Plotly hover tooltips */
+.plotly .hovertext {
+    background-color: #1a1d27 !important;
+    color: #ffffff !important;
+    border: 1px solid #4a4e5a !important;
+    border-radius: 4px !important;
+}
+
 /* Executive clean text style (remove purple glow) */
 h1, h2, h3 {
     color: #dbe3f0 !important;
@@ -310,7 +327,17 @@ with right_col:
         chart_data, names="Category", values="Count", hole=0.45,
         color="Category", color_discrete_map=color_map
     )
-    fig_pie.update_layout(paper_bgcolor="#0E1117", plot_bgcolor="#0E1117", font_color="white", height=400)
+    fig_pie.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)", 
+        plot_bgcolor="rgba(0,0,0,0)", 
+        font_color="white", 
+        height=400,
+        hoverlabel=dict(
+            bgcolor="#1a1d27",
+            font_color="white",
+            font_size=12
+        )
+    )
     st.plotly_chart(fig_pie, use_container_width=True)
 
 with left_col:
