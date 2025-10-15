@@ -10,37 +10,26 @@ st.set_page_config(
 )
 
 # ---- CUSTOM STYLING ----
-# ---- CUSTOM STYLING ----
 st.markdown("""
     <style>
-        /* Force global dark mode */
         :root {
             color-scheme: dark;
         }
-
-        /* Page background and default text */
         body, .stApp {
             background-color: #0b0e14 !important;
             color: #f5f5f5 !important;
         }
-
-        /* Header and titles */
         h1, h2, h3, h4, h5, h6, p, span, div {
             color: #f5f5f5 !important;
         }
-
-        /* Metric cards (info boxes) */
         div[data-testid="stMetricValue"] {
             font-size: 2rem !important;
             font-weight: 700 !important;
         }
-
         div[data-testid="stMetricLabel"] {
             font-size: 1rem !important;
             color: #bbbbbb !important;
         }
-
-        /* Card container */
         .stMetric {
             background: #15181e !important;
             border-radius: 16px !important;
@@ -48,8 +37,6 @@ st.markdown("""
             box-shadow: 0 0 15px rgba(108, 99, 255, 0.15);
             text-align: center;
         }
-
-        /* Data source banner */
         .data-source {
             background-color: #143d33;
             padding: 12px 18px;
@@ -58,47 +45,37 @@ st.markdown("""
             color: #e1e1e1;
             box-shadow: 0 0 10px rgba(0,0,0,0.3);
         }
-
-        /* Tables (Offer Pending, etc.) */
         [data-testid="stDataFrame"] {
             border-radius: 12px !important;
             overflow: hidden !important;
             box-shadow: 0 0 10px rgba(108, 99, 255, 0.15);
         }
-
         table {
             background-color: #14171c !important;
             border-collapse: collapse !important;
             width: 100%;
         }
-
         th {
             background-color: #1f2430 !important;
             color: #e1e1e1 !important;
             font-weight: 600 !important;
             text-transform: uppercase;
         }
-
         td {
             background-color: #171a21 !important;
             color: #d7d7d7 !important;
             font-size: 0.95rem !important;
             border-top: 1px solid #252a34 !important;
         }
-
         tr:hover td {
             background-color: #1e2230 !important;
         }
-
-        /* Offer Pending Section Title */
         .pending-title {
             font-size: 1.8rem !important;
             font-weight: 700 !important;
             color: #ffd95e !important;
             margin-bottom: 8px !important;
         }
-
-        /* Placeholder / loading box */
         .placeholder-box {
             background: #1E1E1E;
             border-radius: 12px;
@@ -108,21 +85,21 @@ st.markdown("""
             color: #bbb;
             box-shadow: 0 0 10px rgba(108, 99, 255, 0.1);
         }
-
-        /* Subtle glowing border for all main boxes */
         .main-card {
             border: 1px solid rgba(108, 99, 255, 0.15);
             border-radius: 16px;
         }
-
     </style>
 """, unsafe_allow_html=True)
-
 
 # ---- LOAD DATA ----
 @st.cache_data(ttl=300)
 def load_data():
-    main_data_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSbD6wUrZEt9kuSQpUT2pw0FMOb7h1y8xeX-hDTeiiZUPjtV0ohK_WcFtCSt_4nuxdtn9zqFS8z8aGw/pub?gid=1155015355&single=true&output=csv"
+    main_data_url = (
+        "https://docs.google.com/spreadsheets/d/e/"
+        "2PACX-1vSbD6wUrZEt9kuSQpUT2pw0FMOb7h1y8xeX-hDTeiiZUPjtV0ohK_WcFtCSt_4nuxdtn9zqFS8z8aGw/"
+        "pub?gid=1155015355&single=true&output=csv"
+    )
     try:
         df = pd.read_csv(main_data_url, skiprows=4)
         data_source = "Google Sheets"
@@ -137,6 +114,7 @@ def load_data():
         df["Start Date"] = pd.to_datetime(df["Start Date"], errors="coerce")
 
     today = pd.Timestamp.now()
+
     def calc_weeks(row):
         start = row["Start Date"]
         if pd.isna(start):
@@ -144,6 +122,7 @@ def load_data():
         if start > today:
             return f"-{int((start - today).days / 7)} weeks from start"
         return int(((today - start).days // 7) + 1)
+
     df["Week"] = df.apply(calc_weeks, axis=1)
 
     if "Salary" in df.columns:
@@ -162,14 +141,16 @@ def load_data():
 
 @st.cache_data(ttl=300)
 def load_jobs_data():
-    jobs_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSbD6wUrZEt9kuSQpUT2pw0FMOb7h1y8xeX-hDTeiiZUPjtV0ohK_WcFtCSt_4nuxdtn9zqFS8z8aGw/pub?gid=116813539&single=true&output=csv"
+    # ✅ Your real Open Jobs Google Sheets URL
+    jobs_url = (
+        "https://docs.google.com/spreadsheets/d/e/"
+        "2PACX-1vSbD6wUrZEt9kuSQpUT2pw0FMOb7h1y8xeX-hDTeiiZUPjtV0ohK_WcFtCSt_4nuxdtn9zqFS8z8aGw/"
+        "pub?gid=116813539&single=true&output=csv"
+    )
     try:
         jobs_df = pd.read_csv(jobs_url, skiprows=5, header=0)
         jobs_df = jobs_df.loc[:, ~jobs_df.columns.str.contains("^Unnamed")]
-        if "JV Link" in jobs_df.columns:
-            jobs_df = jobs_df.drop("JV Link", axis=1)
-        if "JV ID" in jobs_df.columns:
-            jobs_df = jobs_df.drop("JV ID", axis=1)
+        jobs_df = jobs_df.drop(columns=[c for c in ["JV Link", "JV ID"] if c in jobs_df.columns], errors="ignore")
         jobs_df = jobs_df.dropna(how="all").fillna("")
         return jobs_df
     except Exception as e:
@@ -189,34 +170,23 @@ st.markdown('<div class="dashboard-title">🎓 MIT Candidate Training Dashboard<
 if data_source == "Google Sheets":
     st.success(f"📊 Data Source: {data_source} | Last Updated: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
-# ---- METRICS (UPDATED LOGIC) ----
-# Offer Pending and Total Candidate logic
+# ---- METRICS ----
 offer_pending = len(df[df["Status"] == "offer pending"])
 offer_accepted = len(df[df["Status"] == "offer accepted"])
-non_identified = len(
-    df[df["Status"].isin(["free agent discussing opportunity", "unassigned", "training"])]
-)
+non_identified = len(df[df["Status"].isin(["free agent discussing opportunity", "unassigned", "training"])])
 total_candidates = non_identified + offer_accepted
 
-# ✅ Ready for Placement: week > 6 and not placed/offered
 ready_for_placement = df[
     df["Week"].apply(lambda x: isinstance(x, (int, float)) and x > 6)
     & (~df["Status"].isin(["position identified", "offer pending", "offer accepted"]))
-    & (df["Status"].notna())
 ]
 ready = len(ready_for_placement)
 
-# ✅ In Training: week ≤ 6 and currently “training”
 in_training = len(
-    df[
-        df["Status"].eq("training")
-        & df["Week"].apply(lambda x: isinstance(x, (int, float)) and x <= 6)
-    ]
+    df[df["Status"].eq("training") & df["Week"].apply(lambda x: isinstance(x, (int, float)) and x <= 6)]
 )
-
 open_jobs = len(jobs_df) if not jobs_df.empty else 0
 
-# ---- DISPLAY ----
 col1, col2, col3, col4, col5 = st.columns(5)
 col1.metric("Total Candidates", total_candidates)
 col2.metric("Open Positions", open_jobs)
@@ -232,57 +202,34 @@ color_map = {
     "In Training": "#E15F99",
     "Offer Pending": "#A020F0",
 }
-# Updated chart source
 chart_data = pd.DataFrame({
     "Category": ["Ready for Placement", "In Training", "Offer Pending"],
     "Count": [ready, in_training, offer_pending]
 })
+
 with right_col:
     st.subheader("📊 Candidate Status Overview")
     fig_pie = px.pie(
-        chart_data,
-        names="Category",
-        values="Count",
-        hole=0.45,
-        color="Category",
-        color_discrete_map=color_map,
+        chart_data, names="Category", values="Count", hole=0.45,
+        color="Category", color_discrete_map=color_map
     )
-    fig_pie.update_layout(
-        paper_bgcolor="#0E1117", plot_bgcolor="#0E1117", font_color="white", height=400
-    )
+    fig_pie.update_layout(paper_bgcolor="#0E1117", plot_bgcolor="#0E1117", font_color="white", height=400)
     st.plotly_chart(fig_pie, use_container_width=True)
 
 with left_col:
     st.subheader("📍 Open Job Positions")
     if not jobs_df.empty:
-        st.dataframe(jobs_df, use_container_width=True, height=450, hide_index=True)
+        clean_jobs_df = jobs_df[jobs_df["Job Title"].notna()]
+        st.dataframe(clean_jobs_df, use_container_width=True, height=400, hide_index=True)
     else:
         st.markdown('<div class="placeholder-box">No job positions data available</div>', unsafe_allow_html=True)
 
-# ---- OFFER PENDING SECTION (CLEAN VERSION) ----
+# ---- OFFER PENDING SECTION ----
 offer_pending_df = df[df["Status"].str.lower() == "offer pending"]
-
 if not offer_pending_df.empty:
     st.markdown("---")
     st.markdown("### 🤝 Offer Pending Candidates")
-
-    # Standardize name column
-    if "MIT Name" not in offer_pending_df.columns and "New Candidate Name" in offer_pending_df.columns:
-        offer_pending_df["MIT Name"] = offer_pending_df["New Candidate Name"]
-
-    # Define which columns to show (cleaned)
-    display_cols = [col for col in ["MIT Name", "Training Site", "Location", "Level"] if col in offer_pending_df.columns]
-    offer_pending_display = offer_pending_df[display_cols].copy()
-
-    # Fill blanks gracefully
-    offer_pending_display = offer_pending_display.fillna("—")
-
-    # Render the table cleanly
-    st.dataframe(
-        offer_pending_display,
-        use_container_width=True,
-        hide_index=True,
-        height=(len(offer_pending_display) * 35 + 50)
-    )
-
+    display_cols = [c for c in ["MIT Name", "Training Site", "Location", "Level"] if c in offer_pending_df.columns]
+    offer_pending_display = offer_pending_df[display_cols].fillna("—")
+    st.dataframe(offer_pending_display, use_container_width=True, hide_index=True)
     st.caption(f"{len(offer_pending_display)} candidates with pending offers – awaiting final approval/acceptance")
