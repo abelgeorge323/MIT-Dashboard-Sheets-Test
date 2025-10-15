@@ -149,12 +149,16 @@ st.markdown('<div class="dashboard-title">🎓 MIT Candidate Training Dashboard<
 if data_source == "Google Sheets":
     st.success(f"📊 Data Source: {data_source} | Last Updated: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
-# ---- METRICS (UPDATED LOGIC) ----
-# ✅ Follow your spreadsheet logic
-offer_pending = len(df[df["Status"].eq("Offer Pending")])
-offer_accepted = len(df[df["Status"].eq("Offer Accepted")])
-non_identified = len(df[(df["Status"].notna()) &
-                        (~df["Status"].isin(["Position Identified", "Offer Pending"]))])
+# ---- METRICS (STRICT LOGIC) ----
+# Clean and normalize status text
+df["Status"] = df["Status"].astype(str).str.strip().str.lower()
+
+# Status logic following spreadsheet
+offer_pending = len(df[df["Status"] == "offer pending"])
+offer_accepted = len(df[df["Status"] == "offer accepted"])
+non_identified = len(
+    df[df["Status"].isin(["free agent discussing opportunity", "unassigned", "training"])]
+)
 total_candidates = non_identified + offer_accepted
 
 ready = (df["Readiness"] == "Ready for Placement").sum()
