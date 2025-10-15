@@ -9,147 +9,92 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# ---- UNIVERSAL THEME CSS (works for dark + light) ----
+# ---- FORCE DARK MODE ACROSS ALL BROWSERS ----
+# This locks dark theme even if Streamlit user/browser has light mode set
 st.markdown("""
 <style>
-/* ===============================
-   UNIVERSAL STREAMLIT THEME FIX
-   Works in BOTH Light & Dark modes
-   =============================== */
-
-/* Base app background */
-[data-testid="stAppViewContainer"], html, body {
-    background-color: var(--background, #0f1117);
-    color: var(--text, #e6e6e6);
-    transition: background-color 0.3s ease, color 0.3s ease;
+/* ===== Force Global Dark Mode ===== */
+:root,
+html[data-theme="light"],
+html[data-theme="dark"] {
+    color-scheme: dark !important;
+    --background-color: #0e1016 !important;
+    --text-color: #e0e0e0 !important;
+    --secondary-bg-color: #151820 !important;
+    --primary-color: #4aa8e0 !important;
 }
 
-/* Handle auto-theme colors */
-@media (prefers-color-scheme: light) {
-    [data-testid="stAppViewContainer"], html, body {
-        background-color: #f7f8fa !important;
-        color: #1b1c1e !important;
-    }
+/* App Containers */
+html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stSidebar"] {
+    background-color: var(--background-color) !important;
+    color: var(--text-color) !important;
 }
 
-/* Titles and headers */
-h1, h2, h3, h4 {
-    font-weight: 700;
+/* Metrics, Tables, Expanders, Charts */
+[data-testid="stMetric"],
+[data-testid="stDataFrame"],
+[data-testid="stExpander"],
+[data-testid="stPlotlyChart"],
+[data-testid="stHorizontalBlock"] {
+    background-color: var(--secondary-bg-color) !important;
+    color: var(--text-color) !important;
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 8px;
+}
+
+/* Fix white chart areas (Plotly, Vega-Lite, Matplotlib) */
+.js-plotly-plot, .plot-container, canvas, svg {
+    background-color: transparent !important;
+    color: var(--text-color) !important;
+}
+
+/* Executive clean text style (remove purple glow) */
+h1, h2, h3 {
+    color: #dbe3f0 !important;
     text-align: center;
-    color: #9f8bff;
-    text-shadow: 0 0 12px rgba(159,139,255,0.6);
-}
-@media (prefers-color-scheme: light) {
-    h1, h2, h3, h4 {
-        color: #5a4fcf !important;
-        text-shadow: none !important;
-    }
+    font-weight: 700;
+    text-shadow: none !important;
 }
 
-/* Metric cards */
-div[data-testid="stMetric"] {
-    background: rgba(30, 33, 45, 0.85);
-    border-radius: 16px;
-    padding: 24px;
-    border: 1px solid rgba(150, 100, 255, 0.15);
-    box-shadow: 0 0 10px rgba(150, 100, 255, 0.1);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-div[data-testid="stMetric"]:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 0 18px rgba(150, 100, 255, 0.3);
-}
-@media (prefers-color-scheme: light) {
-    div[data-testid="stMetric"] {
-        background: #ffffff !important;
-        border: 1px solid rgba(90, 80, 210, 0.15);
-        color: #1b1b1b !important;
-    }
-}
-
-/* Metric text */
-div[data-testid="stMetricValue"] {
-    font-size: 2rem;
-    font-weight: 800;
-}
-div[data-testid="stMetricLabel"] {
-    font-size: 1rem;
-    color: #bcbcf8;
-}
-
-/* Tables */
-[data-testid="stDataFrame"] {
-    border-radius: 12px !important;
-    overflow: hidden;
-    box-shadow: 0 0 10px rgba(108, 99, 255, 0.1);
-}
-table {
-    width: 100%;
-    border-collapse: collapse !important;
-    background-color: rgba(20, 22, 35, 0.9) !important;
-}
-th {
-    background-color: rgba(31, 36, 48, 0.9) !important;
-    color: #d9d9ff !important;
-    font-weight: 600 !important;
-    text-transform: uppercase;
-}
-td {
-    background-color: rgba(23, 26, 33, 0.9) !important;
+/* Table */
+table, th, td {
+    background-color: #171b24 !important;
     color: #e1e1e1 !important;
-    font-size: 0.95rem !important;
 }
-tr:hover td {
-    background-color: rgba(40, 45, 65, 0.9) !important;
+
+/* Hover states */
+div[data-testid="stMetric"]:hover {
+    box-shadow: 0 0 12px rgba(74,168,224,0.25);
+    transform: translateY(-1px);
+    transition: 0.3s ease;
 }
 
 /* Scrollbars */
 * {
-    scrollbar-color: #3a3f5a transparent !important;
-    scrollbar-width: thin;
+    scrollbar-color: #333 #0e1016 !important;
 }
 
 /* Buttons, dropdowns, text fields */
 button, select, input, textarea {
-    background-color: rgba(26,29,40,0.9) !important;
+    background-color: #1a1d27 !important;
     color: #ffffff !important;
-    border: 1px solid rgba(255,255,255,0.15) !important;
-    border-radius: 6px !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
 }
 button:hover {
-    background-color: #3d3b65 !important;
-}
-@media (prefers-color-scheme: light) {
-    button, select, input, textarea {
-        background-color: #f2f2ff !important;
-        color: #222 !important;
-        border: 1px solid rgba(0,0,0,0.1) !important;
-    }
+    background-color: #26304a !important;
 }
 
-/* Link & icon accent */
+/* Links and icons */
 a, svg, label {
-    color: #9f8bff !important;
+    color: #70b8ff !important;
 }
 
-/* Section placeholders */
-.placeholder-box {
-    background: rgba(20, 22, 30, 0.95);
-    border-radius: 12px;
-    padding: 60px;
-    text-align: center;
-    font-size: 1.1rem;
-    color: #bcbcbc;
+/* Remove duplicate mini title */
+[data-testid="stHeadingContainer"] h1 + div {
+    display: none !important;
 }
 </style>
 """, unsafe_allow_html=True)
-
-# ---- HEADER ----
-st.markdown("<h1>🎓 MIT Candidate Training Dashboard</h1>", unsafe_allow_html=True)
-
-
-
-
 
 # --- Header ---
 st.markdown("<h1>🎓 MIT Candidate Training Dashboard</h1>", unsafe_allow_html=True)
