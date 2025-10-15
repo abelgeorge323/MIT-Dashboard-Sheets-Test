@@ -79,11 +79,18 @@ table, th, td {
     color: #e1e1e1 !important;
 }
 
-/* Hover states */
+/* Hover states - Only for metrics, not expanders */
 div[data-testid="stMetric"]:hover {
     box-shadow: 0 0 12px rgba(74,168,224,0.25);
     transform: translateY(-1px);
     transition: 0.3s ease;
+}
+
+/* Remove hover effects from expanders in placement readiness section */
+[data-testid="stExpander"]:hover {
+    box-shadow: none !important;
+    transform: none !important;
+    transition: none !important;
 }
 
 /* Scrollbars */
@@ -332,6 +339,9 @@ with right_col:
         plot_bgcolor="rgba(0,0,0,0)", 
         font_color="white", 
         height=400,
+        legend=dict(
+            font=dict(color="red", size=14)
+        ),
         hoverlabel=dict(
             bgcolor="#1a1d27",
             font_color="white",
