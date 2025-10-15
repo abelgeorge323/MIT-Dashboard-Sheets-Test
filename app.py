@@ -289,6 +289,166 @@ if not in_training_df.empty:
 else:
     st.markdown('<div class="placeholder-box">No candidates currently in training</div>', unsafe_allow_html=True)
 
+# ==========================================================
+# 🎯 CANDIDATE–JOB MATCH SCORE SECTION (Updated Logic)
+# ==========================================================
+st.markdown("---")
+st.markdown("### 🎯 Candidate–Job Match Score Overview")
+
+# Filter relevant candidates
+candidates_df = df[
+    df["Status"].isin(["training", "unassigned", "free agent discussing opportunity"])
+].copy()
+candidates_df = candidates_df.dropna(subset=["MIT Name"])
+
+if not jobs_df.empty and not candidates_df.empty:
+
+    # ---- Parse salary fields ----
+    def parse_salary(s):
+        if pd.isna(s) or not isinstance(s, str):
+            return None
+        s = s.replace("$", "").replace(",", "").strip()
+        if "-" in s:
+            try:
+                low, high = s.split("-")
+                return (float(low), float(high))
+            except:
+                return None
+        try:
+            return float(s)
+        except:
+            return None
+
+    jobs_df["SalaryRange"] = jobs_df["Salary"].apply(parse_salary)
+    candidates_df["SalaryRange"] = candidates_df["Salary"].apply(parse_salary)
+
+    def midpoint(val):
+        if isinstance(val, tuple): return sum(val) / 2
+        return val if isinstance(val, (int, float)) else None
+
+    jobs_df["SalaryMid"] = jobs_df["SalaryRange"].apply(midpoint)
+    candidates_df["SalaryMid"] = candidates_df["SalaryRange"].apply(midpoint)
+
+    match_results = []
+
+    for _, c in candidates_df.iterrows():
+        for _, j in jobs_df.iterrows():
+            score = 0
+            subscores = {}
+
+            # --- 1. Vertical Alignment (max 40) ---
+            vert_score = 0
+            c_vert = str(c.get("VERT", "")).strip().upper()
+            j_vert = str(j.get("VERT", "")).strip().upper()
+            if c_vert == j_vert:
+                vert_score += 30
+
+            # Amazon or Aviation bonus
+            exp_str = " ".join(
+                str(c.get(k, "")).lower()
+                for k in c.index if any(x in k.lower() for x in ["experience", "notes", "background"])
+            )
+            if "amazon" in exp_str or "aviation" in exp_str:
+                vert_score += 10
+
+            subscores["Vertical"] = vert_score
+
+            # --- 2. Salary Trajectory (max 25) ---
+            c_sal, j_sal = c.get("SalaryMid"), j.get("SalaryMid")
+            if j_sal and c_sal:
+                if j_sal >= 1.05 * c_sal:
+                    sal_score = 25
+                elif abs(j_sal - c_sal) / c_sal <= 0.05:
+                    sal_score = 15
+                elif j_sal < 0.95 * c_sal:
+                    sal_score = -10
+                else:
+                    sal_score = 0
+            else:
+                sal_score = 0  # No salary data = neutral
+            subscores["Salary"] = sal_score
+
+            # --- 3. Geographic Fit (max 20) ---
+            geo_score = 5
+            cand_loc = str(c.get("Location", "")).strip().lower()
+            job_city = str(j.get("City", "")).strip().lower()
+            job_state = str(j.get("State", "")).strip().upper()
+            if cand_loc == job_city:
+                geo_score = 20
+            elif cand_loc.endswith(job_state.lower()):
+                geo_score = 10
+            subscores["Geo"] = geo_score
+
+            # --- 4. Confidence Level (max 15) ---
+            conf = str(c.get("Confidence", "")).lower()
+            if "high" in conf:
+                conf_score = 15
+            elif "mod" in conf:
+                conf_score = 10
+            elif "low" in conf:
+                conf_score = 5
+            else:
+                conf_score = 10
+            subscores["Confidence"] = conf_score
+
+            # --- 5. Readiness (max 10) ---
+            week = c.get("Week")
+            if isinstance(week, (int, float)):
+                if week >= 6:
+                    ready_score = 10
+                elif 1 <= week <= 5:
+                    ready_score = week * 1.5
+                else:
+                    ready_score = 5
+            else:
+                ready_score = 5
+            subscores["Readiness"] = ready_score
+
+            # --- TOTAL SCORE ---
+            total = sum(subscores.values())
+            match_results.append({
+                "Candidate": c["MIT Name"],
+                "Job Account": j["Account"],
+                "City": j["City"],
+                "VERT Match": subscores["Vertical"],
+                "Salary Fit": subscores["Salary"],
+                "Geo Fit": subscores["Geo"],
+                "Confidence": subscores["Confidence"],
+                "Readiness": subscores["Readiness"],
+                "Total Score": round(total, 1)
+            })
+
+    match_df = pd.DataFrame(match_results)
+    match_df = match_df.sort_values("Total Score", ascending=False)
+
+    # ---- Display Results ----
+    st.dataframe(
+        match_df,
+        use_container_width=True,
+        hide_index=True,
+        height=500
+    )
+
+    # ---- Executive Bar Visualization ----
+    avg_scores = match_df.groupby("Candidate")["Total Score"].max().reset_index()
+    fig = px.bar(
+        avg_scores,
+        x="Candidate",
+        y="Total Score",
+        color="Total Score",
+        color_continuous_scale="Viridis",
+        title="🏆 Top Candidate Fit Scores (Best Job Match per Candidate)"
+    )
+    fig.update_layout(
+        paper_bgcolor="#0E1117", 
+        plot_bgcolor="#0E1117", 
+        font_color="white", 
+        height=400
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+else:
+    st.markdown('<div class="placeholder-box">No data available to compute match scores</div>', unsafe_allow_html=True)
 
 # ---- OFFER PENDING SECTION ----
 offer_pending_df = df[df["Status"].str.lower() == "offer pending"]
