@@ -4,7 +4,7 @@ import plotly.express as px
 
 # ---- PAGE CONFIG ----
 st.set_page_config(
-    page_title="MIT Candidate Training Dashboard - Google Sheets", 
+    page_title="MIT Candidate Training Dashboard", 
     layout="wide",
     initial_sidebar_state="collapsed"
 )
@@ -127,19 +127,7 @@ def load_data():
     # Google Sheets CSV export URLs for both tabs
     main_data_url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSbD6wUrZEt9kuSQpUT2pw0FMOb7h1y8xeX-hDTeiiZUPjtV0ohK_WcFtCSt_4nuxdtn9zqFS8z8aGw/pub?gid=1155015355&single=true&output=csv"
     
-    data_source = None
-    try:
-        st.markdown('<div class="status-box">🔄 Loading main data from Google Sheets...</div>', unsafe_allow_html=True)
-        # Try Google Sheets first - skip first few rows to find headers
-        df = pd.read_csv(main_data_url, skiprows=4)
-        data_source = "Google Sheets"
-        st.markdown('<div class="status-box">✅ Successfully loaded from Google Sheets!</div>', unsafe_allow_html=True)
-        
-        
-    except Exception as e:
-        st.markdown(f'<div class="status-box">⚠️ Google Sheets error: {e}</div>', unsafe_allow_html=True)
-        st.markdown('<div class="status-box">📁 No fallback available - this is a Google Sheets only version</div>', unsafe_allow_html=True)
-        return pd.DataFrame(), "Error"
+    
     
     # Remove completely empty rows and header rows
     df = df.dropna(how='all')
