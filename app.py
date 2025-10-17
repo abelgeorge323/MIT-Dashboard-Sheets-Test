@@ -227,7 +227,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ---- LOAD DATA ----
-@st.cache_data(ttl=100)
+@st.cache_data(ttl=300)
 def load_data():
     main_data_url = (
         "https://docs.google.com/spreadsheets/d/e/"
@@ -275,7 +275,7 @@ def load_data():
     return df, data_source
 
 
-@st.cache_data(ttl=100)
+@st.cache_data(ttl=300)
 def load_jobs_data():
     # ✅ Your real Open Jobs Google Sheets URL
     jobs_url = (
@@ -308,9 +308,10 @@ if data_source == "Google Sheets":
     st.success(f"📊 Data Source: {data_source} | Last Updated: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
 # ---- METRICS ----
-# ---- METRICS ----
 offer_pending = len(df[df["Status"] == "offer pending"])
 offer_accepted = len(df[df["Status"] == "offer accepted"])
+non_identified = len(df[df["Status"].isin(["free agent discussing opportunity", "unassigned", "training"])])
+total_candidates = non_identified + offer_accepted
 
 ready_for_placement = df[
     df["Week"].apply(lambda x: isinstance(x, (int, float)) and x > 6)
@@ -318,11 +319,10 @@ ready_for_placement = df[
 ]
 ready = len(ready_for_placement)
 
-in_training = len(df[df["Status"].eq("training") & df["Week"].apply(lambda x: isinstance(x, (int, float)) and x <= 6)])
+in_training = len(
+    df[df["Status"].eq("training") & df["Week"].apply(lambda x: isinstance(x, (int, float)) and x <= 6)]
+)
 open_jobs = len(jobs_df) if not jobs_df.empty else 0
-
-# ✅ More reliable total count
-total_candidates = len(df[df["MIT Name"].notna()])
 
 col1, col2, col3, col4, col5 = st.columns(5)
 col1.metric("Total Candidates", total_candidates)
