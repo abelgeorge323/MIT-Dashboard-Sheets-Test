@@ -332,17 +332,67 @@ col4.metric("In Training (Weeks 1–5)", in_training)
 col5.metric("Offer Pending", offer_pending)
 
 # ---- CHART ----
+# ==========================================================
+# 📊 TRAINING PROGRESS OVERVIEW (New Replacement Chart)
+# ==========================================================
 st.markdown("---")
-left_col, right_col = st.columns([1, 1])
+st.subheader("📊 Candidate Training Progress Overview")
+
+def classify_training_stage(week):
+    if pd.isna(week):
+        return "Unknown"
+    elif week >= 7:
+        return "Ready for Placement"
+    elif 5 <= week <= 6:
+        return "Nearing Placement"
+    else:
+        return "In Training"
+
+# Create new category column based on week
+df["Training Stage"] = df["Week"].apply(classify_training_stage)
+
+# Count per stage
+progress_counts = (
+    df["Training Stage"]
+    .value_counts()
+    .reindex(["In Training", "Nearing Placement", "Ready for Placement"])
+    .fillna(0)
+    .reset_index()
+)
+progress_counts.columns = ["Stage", "Count"]
+
+# Define colors
 color_map = {
-    "Ready for Placement": "#2E91E5",
-    "In Training": "#E15F99",
-    "Offer Pending": "#A020F0",
+    "In Training": "#E15F99",         # pink
+    "Nearing Placement": "#F5A623",   # amber/orange
+    "Ready for Placement": "#2E91E5"  # blue
 }
-chart_data = pd.DataFrame({
-    "Category": ["Ready for Placement", "In Training", "Offer Pending"],
-    "Count": [ready, in_training, offer_pending]
-})
+
+# Plot donut chart
+fig_progress = px.pie(
+    progress_counts,
+    names="Stage",
+    values="Count",
+    hole=0.45,
+    color="Stage",
+    color_discrete_map=color_map
+)
+
+fig_progress.update_layout(
+    paper_bgcolor="rgba(0,0,0,0)",
+    plot_bgcolor="rgba(0,0,0,0)",
+    font_color="white",
+    height=400,
+    legend=dict(font=dict(color="white", size=14)),
+    hoverlabel=dict(
+        bgcolor="#1a1d27",
+        font_color="white",
+        font_size=12
+    )
+)
+
+st.plotly_chart(fig_progress, use_container_width=True)
+
 
 with right_col:
     st.subheader("📊 Candidate Status Overview")
