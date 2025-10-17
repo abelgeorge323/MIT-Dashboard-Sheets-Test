@@ -320,24 +320,15 @@ offer_accepted = len(df[df["Status"] == "offer accepted"])
 non_identified = len(df[df["Status"].isin(["free agent discussing opportunity", "unassigned", "training"])])
 total_candidates = non_identified + offer_accepted
 
-# New week-based categories for chart (only available candidates, not already placed)
-in_training_weeks = len(df[
-    df["Week"].apply(lambda x: isinstance(x, (int, float)) and 1 <= x <= 4)
-    & (~df["Status"].isin(["Position Identified", "Offer Pending", "Offer Accepted"]))
-])
-nearing_placement = len(df[
-    df["Week"].apply(lambda x: isinstance(x, (int, float)) and 5 <= x <= 6)
-    & (~df["Status"].isin(["Position Identified", "Offer Pending", "Offer Accepted"]))
-])
-ready_for_placement_weeks = len(df[
-    df["Week"].apply(lambda x: isinstance(x, (int, float)) and x >= 7)
-    & (~df["Status"].isin(["Position Identified", "Offer Pending", "Offer Accepted"]))
-])
+# New week-based categories for chart
+in_training_weeks = len(df[df["Week"].apply(lambda x: isinstance(x, (int, float)) and 1 <= x <= 4)])
+nearing_placement = len(df[df["Week"].apply(lambda x: isinstance(x, (int, float)) and 5 <= x <= 6)])
+ready_for_placement_weeks = len(df[df["Week"].apply(lambda x: isinstance(x, (int, float)) and x >= 7)])
 
 # Keep existing metrics for other parts of dashboard
 ready_for_placement = df[
-    df["Week"].apply(lambda x: isinstance(x, (int, float)) and x >= 7)
-    & (~df["Status"].isin(["Position Identified", "Offer Pending", "Offer Accepted"]))
+    df["Week"].apply(lambda x: isinstance(x, (int, float)) and x > 6)
+    & (~df["Status"].isin(["position identified", "offer pending", "offer accepted"]))
 ]
 ready = len(ready_for_placement)
 
@@ -392,19 +383,6 @@ with right_col:
         )
     )
     st.plotly_chart(fig_bar, use_container_width=True)
-    
-    # Add info section explaining the training stages
-    st.markdown("""
-    <div style="background-color: #1a1d27; padding: 15px; border-radius: 8px; margin-top: 10px; border: 1px solid rgba(255,255,255,0.1);">
-        <h4 style="color: #4aa8e0; margin-top: 0;">📋 Training Stage Definitions</h4>
-        <p style="color: #bbbbbb; font-size: 0.9rem; margin-bottom: 10px;"><em>Shows only available candidates (excludes already placed)</em></p>
-        <ul style="color: #e0e0e0; margin-bottom: 0;">
-            <li><strong style="color: #FF6B6B;">In Training (Weeks 1-4):</strong> Early training phase, building foundational skills</li>
-            <li><strong style="color: #FFD93D;">Nearing Placement (Weeks 5-6):</strong> Advanced training, preparing for placement</li>
-            <li><strong style="color: #4ECDC4;">Ready for Placement (Week 7+):</strong> Training complete, ready for full-time placement</li>
-        </ul>
-    </div>
-    """, unsafe_allow_html=True)
 
 with left_col:
     st.subheader("📍 Open Job Positions")
