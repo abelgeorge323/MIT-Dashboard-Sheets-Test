@@ -422,9 +422,7 @@ with right_col:
     
     st.plotly_chart(fig_line, use_container_width=True)
     
-    # Add explanation
-    st.caption("📊 **Training Progression**: Shows how candidates move through training stages. Beginning candidates (Weeks 1-3) are just starting, Near Ready (Weeks 4-6) are developing skills, and Ready for Placement (Week 7+) are prepared for job assignments.")
-
+   
 with left_col:
     st.subheader("📍 Open Job Positions")
     if not jobs_df.empty:
