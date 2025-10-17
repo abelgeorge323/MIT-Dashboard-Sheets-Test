@@ -227,15 +227,15 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ---- LOAD DATA ----
-@st.cache_data(ttl=300)
+@st.cache_data(ttl=60)  # Reduced from 300 to 60 seconds for faster updates
 def load_data():
     main_data_url = (
-    "https://docs.google.com/spreadsheets/d/e/"
-    "2PACX-1vTAdbdhuieyA-axzb4aLe8c7zdAYXBLPNrIxKRder6j1ZAlj2g4U1k0YzkZbm_dEcSwBik4CJ57FROJ/"
-    "pub?gid=813046237&single=true&output=csv"
-)
+        "https://docs.google.com/spreadsheets/d/e/"
+        "2PACX-1vTAdbdhuieyA-axzb4aLe8c7zdAYXBLPNrIxKRder6j1ZAlj2g4U1k0YzkZbm_dEcSwBik4CJ57FROJ/"
+        "pub?gid=813046237&single=true&output=csv"
+    )
     try:
-        df = pd.read_csv(main_data_url, skiprows=4)
+        df = pd.read_csv(main_data_url, skiprows=1)  # Skip only the first row with "Training info"
         data_source = "Google Sheets"
     except Exception as e:
         st.error(f"⚠️ Google Sheets error: {e}")
@@ -249,15 +249,34 @@ def load_data():
 
     today = pd.Timestamp.now()
 
-    def calc_weeks(row):
-        start = row["Start Date"]
-        if pd.isna(start):
-            return None
-        if start > today:
-            return f"-{int((start - today).days / 7)} weeks from start"
-        return int(((today - start).days // 7) + 1)
-
-    df["Week"] = df.apply(calc_weeks, axis=1)
+    # Calculate weeks based on start date first, fallback to Week column if calculation fails
+    def calc_weeks_from_start_date(row):
+        """Calculate weeks in program based on start date"""
+        if "Start Date" in row.index and not pd.isna(row["Start Date"]):
+            start = row["Start Date"]
+            if start > today:
+                # Future start date - return negative weeks
+                return int((start - today).days / 7)
+            else:
+                # Past start date - return positive weeks
+                return int(((today - start).days // 7) + 1)
+        return None
+    
+    # Try to calculate weeks from start date first
+    calculated_weeks = df.apply(calc_weeks_from_start_date, axis=1)
+    
+    # Use calculated weeks where possible, fallback to Week column for missing/invalid values
+    if "Week" in df.columns:
+        # Convert Week column to numeric as fallback
+        week_column = pd.to_numeric(df["Week"], errors="coerce")
+        
+        # Use calculated weeks where we have valid start dates, otherwise use Week column
+        df["Week"] = calculated_weeks.where(calculated_weeks.notna(), week_column)
+    else:
+        # No Week column, use calculated weeks
+        df["Week"] = calculated_weeks
+    
+    # Convert final result to numeric
     df["Week"] = pd.to_numeric(df["Week"], errors="coerce")
 
 
@@ -275,7 +294,7 @@ def load_data():
     return df, data_source
 
 
-@st.cache_data(ttl=300)
+@st.cache_data(ttl=60)  # Reduced from 300 to 60 seconds for faster updates
 def load_jobs_data():
     # ✅ Your real Open Jobs Google Sheets URL
     jobs_url = (
