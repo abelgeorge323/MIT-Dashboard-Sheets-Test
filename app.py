@@ -364,18 +364,48 @@ chart_data = pd.DataFrame({
 })
 
 with right_col:
-    st.subheader("📊 Candidate Status Overview")
-    fig_pie = px.pie(
-        chart_data, names="Category", values="Count", hole=0.45,
-        color="Category", color_discrete_map=color_map
+    st.subheader("📈 Training Progression Overview")
+    
+    # Create training progression data
+    beginning_training = len(df[df["Status"].eq("training") & df["Week"].apply(lambda x: isinstance(x, (int, float)) and 1 <= x <= 3)])
+    near_ready = len(df[df["Status"].eq("training") & df["Week"].apply(lambda x: isinstance(x, (int, float)) and 4 <= x <= 6)])
+    ready_for_placement = len(df[df["Week"].apply(lambda x: isinstance(x, (int, float)) and x > 6) & (~df["Status"].isin(["position identified", "offer pending", "offer accepted"])) & (df["Status"].notna())])
+    
+    progression_data = pd.DataFrame({
+        "Training Stage": ["Beginning (Weeks 1-3)", "Near Ready (Weeks 4-6)", "Ready for Placement (Week 7+)"],
+        "Count": [beginning_training, near_ready, ready_for_placement],
+        "Stage_Order": [1, 2, 3]
+    })
+    
+    # Create line chart
+    fig_line = px.line(
+        progression_data, 
+        x="Stage_Order", 
+        y="Count", 
+        markers=True,
+        title="Candidate Progression Through Training",
+        labels={"Count": "Number of Candidates", "Stage_Order": "Training Stage"}
     )
-    fig_pie.update_layout(
+    
+    # Update layout for dark theme
+    fig_line.update_layout(
         paper_bgcolor="rgba(0,0,0,0)", 
         plot_bgcolor="rgba(0,0,0,0)", 
-        font_color="white", 
+        font_color="white",
+        title_font_color="white",
         height=400,
-        legend=dict(
-            font=dict(color="red", size=14)
+        xaxis=dict(
+            tickmode='array',
+            tickvals=[1, 2, 3],
+            ticktext=["Beginning<br>(Weeks 1-3)", "Near Ready<br>(Weeks 4-6)", "Ready for<br>Placement (7+)"],
+            showgrid=True,
+            gridcolor="rgba(255,255,255,0.1)"
+        ),
+        yaxis=dict(
+            showgrid=True,
+            gridcolor="rgba(255,255,255,0.1)",
+            zeroline=True,
+            zerolinecolor="rgba(255,255,255,0.2)"
         ),
         hoverlabel=dict(
             bgcolor="#1a1d27",
@@ -383,7 +413,17 @@ with right_col:
             font_size=12
         )
     )
-    st.plotly_chart(fig_pie, use_container_width=True)
+    
+    # Update line and marker colors
+    fig_line.update_traces(
+        line=dict(color="#4aa8e0", width=3),
+        marker=dict(color="#4aa8e0", size=10, line=dict(color="white", width=2))
+    )
+    
+    st.plotly_chart(fig_line, use_container_width=True)
+    
+    # Add explanation
+    st.caption("📊 **Training Progression**: Shows how candidates move through training stages. Beginning candidates (Weeks 1-3) are just starting, Near Ready (Weeks 4-6) are developing skills, and Ready for Placement (Week 7+) are prepared for job assignments.")
 
 with left_col:
     st.subheader("📍 Open Job Positions")
