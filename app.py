@@ -257,15 +257,8 @@ def load_data():
             return f"-{int((start - today).days / 7)} weeks from start"
         return int(((today - start).days // 7) + 1)
 
-    # Store original Week values as backup
-    df["Week_Original"] = df["Week"]
-    
-    # Calculate weeks from Start Date
     df["Week"] = df.apply(calc_weeks, axis=1)
     df["Week"] = pd.to_numeric(df["Week"], errors="coerce")
-    
-    # Fallback to original Week values if calculation failed
-    df["Week"] = df["Week"].fillna(df["Week_Original"])
 
 
     if "Salary" in df.columns:
@@ -320,12 +313,6 @@ offer_accepted = len(df[df["Status"] == "offer accepted"])
 non_identified = len(df[df["Status"].isin(["free agent discussing opportunity", "unassigned", "training"])])
 total_candidates = non_identified + offer_accepted
 
-# New week-based categories for chart
-in_training_weeks = len(df[df["Week"].apply(lambda x: isinstance(x, (int, float)) and 1 <= x <= 4)])
-nearing_placement = len(df[df["Week"].apply(lambda x: isinstance(x, (int, float)) and 5 <= x <= 6)])
-ready_for_placement_weeks = len(df[df["Week"].apply(lambda x: isinstance(x, (int, float)) and x >= 7)])
-
-# Keep existing metrics for other parts of dashboard
 ready_for_placement = df[
     df["Week"].apply(lambda x: isinstance(x, (int, float)) and x > 6)
     & (~df["Status"].isin(["position identified", "offer pending", "offer accepted"]))
@@ -348,33 +335,28 @@ col5.metric("Offer Pending", offer_pending)
 st.markdown("---")
 left_col, right_col = st.columns([1, 1])
 color_map = {
-    "In Training": "#FF6B6B",
-    "Nearing Placement": "#FFD93D", 
-    "Ready for Placement": "#4ECDC4",
+    "Ready for Placement": "#2E91E5",
+    "In Training": "#E15F99",
+    "Offer Pending": "#A020F0",
 }
 chart_data = pd.DataFrame({
-    "Category": ["In Training", "Nearing Placement", "Ready for Placement"],
-    "Count": [in_training_weeks, nearing_placement, ready_for_placement_weeks]
+    "Category": ["Ready for Placement", "In Training", "Offer Pending"],
+    "Count": [ready, in_training, offer_pending]
 })
 
 with right_col:
-    st.subheader("📊 Training Progress Overview")
-    fig_bar = px.bar(
-        chart_data, x="Count", y="Category", orientation='h',
+    st.subheader("📊 Candidate Status Overview")
+    fig_pie = px.pie(
+        chart_data, names="Category", values="Count", hole=0.45,
         color="Category", color_discrete_map=color_map
     )
-    fig_bar.update_layout(
+    fig_pie.update_layout(
         paper_bgcolor="rgba(0,0,0,0)", 
         plot_bgcolor="rgba(0,0,0,0)", 
         font_color="white", 
         height=400,
-        showlegend=False,
-        xaxis=dict(
-            gridcolor="rgba(255,255,255,0.1)",
-            color="white"
-        ),
-        yaxis=dict(
-            color="white"
+        legend=dict(
+            font=dict(color="red", size=14)
         ),
         hoverlabel=dict(
             bgcolor="#1a1d27",
@@ -382,7 +364,7 @@ with right_col:
             font_size=12
         )
     )
-    st.plotly_chart(fig_bar, use_container_width=True)
+    st.plotly_chart(fig_pie, use_container_width=True)
 
 with left_col:
     st.subheader("📍 Open Job Positions")
