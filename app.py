@@ -227,7 +227,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ---- LOAD DATA ----
-@st.cache_data(ttl=300)
+@st.cache_data(ttl=100)
 def load_data():
     main_data_url = (
         "https://docs.google.com/spreadsheets/d/e/"
@@ -275,7 +275,7 @@ def load_data():
     return df, data_source
 
 
-@st.cache_data(ttl=300)
+@st.cache_data(ttl=100)
 def load_jobs_data():
     # ✅ Your real Open Jobs Google Sheets URL
     jobs_url = (
